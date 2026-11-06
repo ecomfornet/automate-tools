@@ -23,8 +23,6 @@ RUN npm install --omit=dev
 
 # Verify and ensure Playwright Chromium browser & headless shell are installed
 RUN npx playwright install chromium chromium-headless-shell || npx playwright install chromium
-RUN npx playwright install-deps firefox || true
-RUN npx camoufox fetch || true
 
 # Copy all application code
 COPY . .
@@ -35,15 +33,24 @@ RUN sed -i 's/\r$//' /app/entrypoint.sh && chmod +x /app/entrypoint.sh
 # Ensure storage and profile directories exist
 RUN mkdir -p /app/downloads /app/local_profiles /app/scratch
 
+# Set default environment variables
 ENV NODE_ENV=production \
     PORT=3000 \
-    CONCURRENCY=5 \
-    DISPLAY=:99
+    DISPLAY=:99 \
+    RESOLUTION=1920x1080x24 \
+    VNC_PORT=5900 \
+    NOVNC_PORT=6080 \
+    BROWSER_DATA_DIR=/app/local_profiles \
+    DOWNLOADS_DIR=/app/downloads \
+    SCRATCH_DIR=/app/scratch
 
+# Expose HTTP API/Web UI and noVNC web interface
 EXPOSE 3000 6080
 
-# Health check verifies the server and in-memory queue are responsive
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD node -e "fetch('http://localhost:3000/admin/queues').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"
+# Health check against Express server
+HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:3000/api/health || exit 1
 
+# Start virtual display, window manager, VNC server, noVNC proxy, and application
 ENTRYPOINT ["/app/entrypoint.sh"]
+CMD ["node", "server.js"]
