@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test API Execution</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: auto; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; }
+        input[type="text"] { width: 100%; padding: 8px; box-sizing: border-box; }
+        button { padding: 10px 15px; background-color: #007bff; color: white; border: none; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+        #result { margin-top: 20px; padding: 10px; border: 1px solid #ccc; display: none; }
+        #loading { display: none; margin-top: 10px; color: #666; }
+        img { max-width: 100%; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <h2>Test Scenario "Nano banana"</h2>
+    
+    <div class="form-group">
+        <label for="texte">Texte (Text to inject):</label>
+        <input type="text" id="texte" placeholder="Enter text here...">
+    </div>
+
+    <div class="form-group">
+        <label for="image">Image URL (URL to inject):</label>
+        <input type="text" id="image" placeholder="https://example.com/image.png">
+    </div>
+
+    <button onclick="executeScenario()">Run Scenario</button>
+
+    <div id="loading">Executing scenario, please wait...</div>
+
+    <div id="result">
+        <h3>Result:</h3>
+        <p id="resultText"></p>
+        <a id="resultLink" href="#" target="_blank" style="display:none;">Open Downloaded Image</a>
+        <br>
+        <img id="resultImage" src="" alt="Generated Result" style="display:none;">
+    </div>
+
+    <script>
+        async function executeScenario() {
+            const texte = document.getElementById('texte').value;
+            const image = document.getElementById('image').value;
+            const scenarioName = "Nano banana"; // Hardcoded as per request
+
+            const loading = document.getElementById('loading');
+            const resultDiv = document.getElementById('result');
+            const resultText = document.getElementById('resultText');
+            const resultLink = document.getElementById('resultLink');
+            const resultImg = document.getElementById('resultImage');
+
+            loading.style.display = 'block';
+            resultDiv.style.display = 'none';
+
+            try {
+                // We can pass them as query params or in the JSON body.
+                // Our API handles both, we'll use JSON body.
+                const response = await fetch(`/api/execute/${encodeURIComponent(scenarioName)}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ texte, image })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    resultText.innerText = "Success! Image URL:";
+                    resultLink.href = data.imageUrl;
+                    resultLink.innerText = data.imageUrl;
+                    resultLink.style.display = 'inline-block';
+                    
+                    if (data.imageUrl) {
+                        resultImg.src = data.imageUrl;
+                        resultImg.style.display = 'block';
+                    }
+                } else {
+                    resultText.innerText = "Error: " + data.error;
+                    resultLink.style.display = 'none';
+                    resultImg.style.display = 'none';
+                }
+            } catch (error) {
+                resultText.innerText = "Network Error: " + error.message;
+                resultLink.style.display = 'none';
+                resultImg.style.display = 'none';
+            } finally {
+                loading.style.display = 'none';
+                resultDiv.style.display = 'block';
+            }
+        }
+    </script>
+
+</body>
+</html>
