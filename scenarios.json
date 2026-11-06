@@ -2,7 +2,7 @@
   {
     "scenarioName": "New Scenario",
     "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
-    "browserType": "Isolated",
+    "browserType": "Camoufox",
     "chromeProfile": "Nano",
     "forceCloseChrome": false,
     "headless": false,
@@ -24,7 +24,7 @@
   {
     "scenarioName": "Nano",
     "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
-    "browserType": "Isolated",
+    "browserType": "Camoufox",
     "chromeProfile": "Default",
     "forceCloseChrome": false,
     "headless": false,
@@ -82,7 +82,7 @@
   {
     "scenarioName": "ikea",
     "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
-    "browserType": "Isolated",
+    "browserType": "Camoufox",
     "chromeProfile": "Default",
     "forceCloseChrome": false,
     "headless": false,
@@ -167,7 +167,7 @@
   {
     "scenarioName": "payhip",
     "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
-    "browserType": "Isolated",
+    "browserType": "Camoufox",
     "chromeProfile": "Default",
     "forceCloseChrome": false,
     "headless": false,
@@ -245,7 +245,7 @@
   {
     "scenarioName": "chat",
     "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
-    "browserType": "Isolated",
+    "browserType": "Camoufox",
     "chromeProfile": "Default",
     "forceCloseChrome": false,
     "headless": false,
