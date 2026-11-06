@@ -1,0 +1,3397 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Automation Dashboard</title>
+    <style>
+        :root {
+            --border-color: #d3d3d3;
+            --bg-color: #f0f0f0;
+            --highlight-bg: #e5f3ff;
+            --highlight-border: #cce8ff;
+            --text-color: #333;
+            --link-color: #0066cc;
+            --active-tab-bg: #fff;
+        }
+
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 13px;
+            color: var(--text-color);
+            background: #ffffff;
+        }
+
+        .window {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            border: 1px solid var(--border-color);
+            box-sizing: border-box;
+        }
+
+        .top-bar {
+            padding: 10px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            background: #fafafa;
+        }
+
+        .main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Sidebar styles */
+        .sidebar {
+            width: 400px;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            background: #fff;
+        }
+
+        .sidebar-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+            background: #eaeaea;
+        }
+
+        .tab-btn {
+            flex: 1;
+            background: none;
+            border: none;
+            border-right: 1px solid var(--border-color);
+            color: var(--text-color);
+            font-size: 13px;
+            cursor: pointer;
+            padding: 8px 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        .tab-btn:last-child {
+            border-right: none;
+        }
+
+        .tab-btn.active {
+            background: var(--active-tab-bg);
+            font-weight: bold;
+            border-bottom: 2px solid #3498db;
+        }
+
+        .tab-btn:hover:not(.active) {
+            background: #dcdcdc;
+        }
+
+        .tab-content {
+            display: none;
+            flex: 1;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .tab-content.active {
+            display: flex;
+        }
+
+        .operates-header {
+            padding: 5px 10px;
+            color: #666;
+            font-size: 12px;
+            border-bottom: 1px solid var(--border-color);
+            background: #f9f9f9;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .toolbar-btn {
+            background: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: 2px;
+            cursor: pointer;
+            padding: 2px 5px;
+            font-size: 12px;
+        }
+
+        .toolbar-btn:hover {
+            background: #eee;
+        }
+
+        .tree-view {
+            flex: 1;
+            overflow-y: auto;
+            padding: 5px;
+        }
+
+        .tree-node {
+            display: flex;
+            align-items: center;
+            padding: 4px 5px;
+            cursor: pointer;
+            user-select: none;
+            border: 1px solid transparent;
+        }
+
+        .tree-node:hover {
+            background-color: #f8f8f8;
+        }
+
+        .tree-node.selected {
+            background-color: var(--highlight-bg);
+            border: 1px solid var(--highlight-border);
+            border-radius: 2px;
+        }
+
+        .step-badge {
+            font-size: 10px;
+            padding: 1px 6px;
+            border-radius: 4px;
+            margin-left: auto;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            white-space: nowrap;
+        }
+
+        .badge-dynamic {
+            background-color: #e0f2fe;
+            color: #0284c7;
+            border: 1px solid #bae6fd;
+        }
+
+        .badge-fixed {
+            background-color: #f1f5f9;
+            color: #64748b;
+            border: 1px solid #e2e8f0;
+        }
+
+        .tree-icon {
+            width: 16px;
+            height: 16px;
+            margin-right: 6px;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 14px;
+        }
+
+        /* Main Panel styles */
+        .main-panel {
+            flex: 1;
+            padding: 15px;
+            background: #fff;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .group-box {
+            border: 1px solid var(--border-color);
+            padding: 15px;
+            margin-bottom: 15px;
+            position: relative;
+            background: #fff;
+        }
+
+        .group-box.red-highlight {
+            border: 2px solid #e74c3c;
+        }
+
+        .group-title {
+            position: absolute;
+            top: -10px;
+            left: 10px;
+            background: white;
+            padding: 0 5px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        .form-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            min-height: 26px;
+        }
+
+        .form-label {
+            width: 110px;
+            text-align: right;
+            margin-right: 10px;
+        }
+
+        .form-input {
+            border: 1px solid #aaa;
+            padding: 5px;
+            border-radius: 2px;
+            font-family: inherit;
+            font-size: 13px;
+        }
+
+        .form-input.full-width {
+            flex: 1;
+            max-width: 400px;
+        }
+
+        textarea.form-input {
+            width: 100%;
+            height: 100px;
+            resize: vertical;
+            box-sizing: border-box;
+        }
+
+        .form-select {
+            border: 1px solid #aaa;
+            padding: 4px;
+            border-radius: 2px;
+            font-family: inherit;
+            font-size: 13px;
+            min-width: 150px;
+        }
+
+        .btn {
+            background-color: #f0f0f0;
+            border: 1px solid #aaa;
+            padding: 6px 14px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 13px;
+            border-radius: 3px;
+        }
+
+        .btn:hover {
+            background-color: #e0e0e0;
+        }
+
+        .btn-success {
+            background-color: #2ecc71;
+            color: white;
+            border-color: #27ae60;
+            font-weight: bold;
+        }
+
+        .btn-success:hover {
+            background-color: #27ae60;
+        }
+
+        .btn-primary {
+            background-color: #3498db;
+            color: white;
+            border-color: #2980b9;
+            font-weight: bold;
+        }
+
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+
+        /* Dynamic forms */
+        .config-section {
+            display: none;
+        }
+
+        .config-section.active {
+            display: block;
+        }
+
+        .req-star {
+            color: #e74c3c;
+        }
+
+        /* Icons */
+        .icon-nav {
+            color: #9b59b6;
+        }
+
+        .icon-click {
+            color: #3498db;
+        }
+
+        .is-invalid {
+            border-color: #e74c3c !important;
+            background-color: #fdf2f2 !important;
+        }
+        .is-valid {
+            border-color: #2ecc71 !important;
+            background-color: #f2fdf5 !important;
+        }
+
+        /* Global Header styles */
+        .global-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            height: 48px;
+            background: #1a1a2e;
+            color: #ffffff;
+            border-bottom: 1px solid #2c2c44;
+        }
+        .global-logo {
+            font-size: 15px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #3498db;
+        }
+        .global-logo-badge {
+            background: #3498db;
+            color: #fff;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .global-nav {
+            display: flex;
+            height: 100%;
+        }
+        .global-nav-tab {
+            background: none;
+            border: none;
+            color: #a0a0b0;
+            padding: 0 20px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            height: 100%;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s ease;
+        }
+        .global-nav-tab:hover {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .global-nav-tab.active {
+            color: #3498db;
+            border-bottom-color: #3498db;
+            background: rgba(255, 255, 255, 0.08);
+            font-weight: bold;
+        }
+        
+        /* View Containers */
+        .view-container {
+            display: none;
+            flex: 1;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .view-container.active {
+            display: flex;
+        }
+
+        /* CSV View specific styles */
+        .csv-workspace {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            background: #f8fafc;
+        }
+        .csv-sidebar {
+            width: 360px;
+            border-right: 1px solid var(--border-color);
+            background: #f1f5f9;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            padding: 15px;
+            gap: 15px;
+        }
+        .csv-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            padding: 20px;
+            gap: 20px;
+        }
+        .csv-card {
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 15px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .csv-card-title {
+            font-size: 13px;
+            font-weight: bold;
+            margin-bottom: 12px;
+            color: #1e293b;
+            border-bottom: 1px solid #f1f5f9;
+            padding-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .csv-dropzone {
+            border: 2px dashed #cbd5e1;
+            border-radius: 6px;
+            padding: 20px;
+            text-align: center;
+            background: #f8fafc;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .csv-dropzone:hover {
+            border-color: #3498db;
+            background: #f0f9ff;
+        }
+        
+        /* Stats Grid */
+        .csv-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .csv-stat-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 10px;
+            text-align: center;
+        }
+        .csv-stat-val {
+            font-size: 18px;
+            font-weight: bold;
+            color: #1e293b;
+        }
+        .csv-stat-lbl {
+            font-size: 10px;
+            text-transform: uppercase;
+            color: #64748b;
+            margin-top: 2px;
+        }
+        .csv-stat-box.success { background: #f0fdf4; border-color: #bbf7d0; }
+        .csv-stat-box.success .csv-stat-val { color: #16a34a; }
+        .csv-stat-box.failed { background: #fef2f2; border-color: #fecaca; }
+        .csv-stat-box.failed .csv-stat-val { color: #dc2626; }
+        .csv-stat-box.processing { background: #fffbeb; border-color: #fef3c7; }
+        .csv-stat-box.processing .csv-stat-val { color: #d97706; }
+        
+        /* Progress Bar */
+        .csv-progress-wrapper {
+            margin-bottom: 15px;
+        }
+        .csv-progress-text {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 6px;
+        }
+        .csv-progress-bar-bg {
+            background: #e2e8f0;
+            border-radius: 4px;
+            height: 12px;
+            overflow: hidden;
+        }
+        .csv-progress-bar-fill {
+            background: #3498db;
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        /* Table styles */
+        .csv-table-wrapper {
+            flex: 1;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: #fff;
+        }
+        .csv-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+        .csv-table th {
+            background: #f8fafc;
+            color: #475569;
+            font-weight: bold;
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .csv-table td {
+            padding: 8px 12px;
+            border-bottom: 1px solid #f1f5f9;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 250px;
+        }
+        .csv-table tr:hover {
+            background: #f8fafc;
+        }
+        .csv-status-badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        .csv-status-badge.pending { background: #e2e8f0; color: #475569; }
+        .csv-status-badge.processing { background: #fef3c7; color: #d97706; }
+        .csv-status-badge.success { background: #dcfce7; color: #16a34a; }
+        .csv-status-badge.failed { background: #fee2e2; color: #dc2626; }
+    </style>
+</head>
+
+<body>
+    <!-- Result Modal -->
+    <div id="resultModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.55); z-index:9999; align-items:center; justify-content:center;">
+        <div style="background:#fff; border-radius:12px; padding:28px 32px; max-width:600px; width:90%; box-shadow:0 20px 60px rgba(0,0,0,0.3); font-family:inherit;">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:18px;">
+                <span style="font-size:28px;">✅</span>
+                <h2 style="margin:0; font-size:18px; color:#1a1a2e;">Scenario Completed Successfully!</h2>
+            </div>
+                        <div id="resultTextSection" style="display:none; margin-bottom:16px;">
+                <div style="font-size:12px; font-weight:700; text-transform:uppercase; color:#16a34a; margin-bottom:8px;">📋 Copied Clipboard Text</div>
+                <div style="display:flex; flex-direction:column; gap:8px;">
+                    <textarea id="resultTextValue" readonly style="width:100%; min-height:85px; padding:8px 10px; border:1px solid #bbf7d0; border-radius:6px; font-size:12px; font-family:monospace; background:#f0fdf4; color:#166534; box-sizing:border-box; resize:vertical;"></textarea>
+                    <div style="display:flex; justify-content:flex-end;">
+                        <button id="btnCopyResultText" onclick="copyResultText()" style="padding:6px 14px; background:#16a34a; color:#fff; border:none; border-radius:6px; cursor:pointer; font-size:12px; font-weight:600; white-space:nowrap;">📋 Copy to Clipboard</button>
+                    </div>
+                </div>
+            </div>
+            <div id="resultLinkSection" style="display:none; margin-bottom:16px;">
+                <div style="font-size:12px; font-weight:700; text-transform:uppercase; color:#0284c7; margin-bottom:8px;">🔗 Extracted Link (&lt;a&gt; tag)</div>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <input id="resultLinkUrl" type="text" readonly style="flex:1; padding:8px 10px; border:1px solid #bae6fd; border-radius:6px; font-size:12px; font-family:monospace; background:#f0f9ff; color:#0369a1;" />
+                    <button onclick="copyResultLink()" style="padding:8px 12px; background:#0284c7; color:#fff; border:none; border-radius:6px; cursor:pointer; font-size:12px; white-space:nowrap;">📋 Copy</button>
+                    <button onclick="openResultLink()" style="padding:8px 12px; background:#10b981; color:#fff; border:none; border-radius:6px; cursor:pointer; font-size:12px; white-space:nowrap;">🌐 Open</button>
+                </div>
+            </div>
+            <div id="resultImageSection" style="display:none; margin-bottom:16px;">
+                <div style="font-size:12px; font-weight:700; text-transform:uppercase; color:#7f8c8d; margin-bottom:8px;">☁️ Uploaded Image URL</div>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <input id="resultImageUrl" type="text" readonly style="flex:1; padding:8px 10px; border:1px solid #ddd; border-radius:6px; font-size:12px; font-family:monospace; background:#f8f9fa; color:#2c3e50;" />
+                    <button onclick="copyResultUrl()" style="padding:8px 12px; background:#3498db; color:#fff; border:none; border-radius:6px; cursor:pointer; font-size:12px; white-space:nowrap;">📋 Copy</button>
+                    <button onclick="openResultUrl()" style="padding:8px 12px; background:#27ae60; color:#fff; border:none; border-radius:6px; cursor:pointer; font-size:12px; white-space:nowrap;">🔗 Open</button>
+                </div>
+                <div id="resultImagePreview" style="margin-top:12px; text-align:center; display:none;">
+                    <div id="resultImgLoading" style="color:#7f8c8d; font-size:12px; padding:10px;">⏳ Loading preview...</div>
+                    <img id="resultImg" src="" style="max-width:100%; max-height:280px; border-radius:8px; border:1px solid #eee; object-fit:contain; display:none;"
+                        onload="this.style.display='block'; document.getElementById('resultImgLoading').style.display='none';"
+                        onerror="this.style.display='none'; document.getElementById('resultImgLoading').innerHTML='&lt;span style=\'color:#e74c3c\'&gt;⚠️ Preview not available — click Open to view&lt;/span&gt;';" />
+                </div>
+            </div>
+            <div id="resultR2Error" style="display:none; background:#fff5f5; border:1px solid #f5c6cb; border-radius:8px; padding:12px; margin-bottom:16px;">
+                <div style="font-weight:700; color:#c0392b; margin-bottom:6px; font-size:13px;">⚠️ R2 Upload Failed (image saved locally instead)</div>
+                <div id="resultR2ErrorMsg" style="font-size:12px; color:#721c24; font-family:monospace; word-break:break-all;"></div>
+            </div>
+            <div id="resultLocalUrl" style="display:none; margin-bottom:16px;">
+                <div style="font-size:12px; font-weight:700; text-transform:uppercase; color:#7f8c8d; margin-bottom:8px;">💾 Local Download URL</div>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <input id="resultLocalUrlInput" type="text" readonly style="flex:1; padding:8px 10px; border:1px solid #ddd; border-radius:6px; font-size:12px; font-family:monospace; background:#f8f9fa; color:#2c3e50;" />
+                    <button onclick="copyLocalUrl()" style="padding:8px 12px; background:#3498db; color:#fff; border:none; border-radius:6px; cursor:pointer; font-size:12px; white-space:nowrap;">📋 Copy</button>
+                </div>
+            </div>
+            <div style="text-align:right; margin-top:8px;">
+                <button onclick="closeResultModal()" style="padding:10px 24px; background:#2c3e50; color:#fff; border:none; border-radius:6px; cursor:pointer; font-size:14px; font-weight:600;">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="window">
+        <!-- Global Navigation Header -->
+        <div class="global-header">
+            <div class="global-logo">
+                ⚡ <span>Gemini Automation Studio</span>
+                <span class="global-logo-badge">V2.0</span>
+            </div>
+            <div class="global-nav">
+                <button class="global-nav-tab active" id="btnNavEditor" onclick="switchView('editor')">🛠️ Scenario Builder</button>
+                <button class="global-nav-tab" id="btnNavCsv" onclick="switchView('csv')">📄 Gemini CSV</button>
+            </div>
+        </div>
+
+        <!-- View 1: Scenario Builder -->
+        <div id="view-editor" class="view-container active">
+            <div class="top-bar">
+            <label style="font-weight: 600;">Scenario Name:</label>
+            <input type="text" id="scenarioName" class="form-input" style="width: 200px;"
+                placeholder="My Automation Task" value="New Scenario">
+            <button id="saveScenarioBtn" class="btn btn-primary" style="margin-left: 5px;">💾 Save</button>
+            <select id="loadScenarioSelect" class="form-select" style="margin-left: 10px; width: 150px;">
+                <option value="">📂 Load Scenario...</option>
+            </select>
+            <button id="deleteScenarioBtn" class="btn" style="margin-left: 5px; color: #e74c3c; border-color: #e74c3c;"
+                title="Delete current scenario">🗑️ Delete</button>
+            <div style="flex: 1;"></div>
+            <button id="runScenarioBtn" class="btn btn-success">▶ Run Scenario</button>
+        </div>
+
+        <div class="main-content">
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <div class="sidebar-tabs">
+                    <button class="tab-btn active" data-tab="operates">⚙️ Operates</button>
+                    <button class="tab-btn" data-tab="useragent">💻 Config</button>
+                </div>
+
+                <!-- Operates Tab -->
+                <div class="tab-content active" id="tab-operates">
+                    <div class="operates-header">
+                        <span>Operations Tree</span>
+                        <div>
+                            <select id="newStepType" class="form-select" style="width: 125px; padding: 2px;">
+                                <option value="Navigate">Navigate</option>
+                                <option value="Click">Click</option>
+                                <option value="Send Text">Send Text</option>
+                                <option value="HTML-Text">HTML-Text</option>
+                                <option value="Clipboard">Clipboard</option>
+                                <option value="Sleep">Sleep</option>
+                                <option value="Upload Image">Upload Image</option>
+                                <option value="Download Image">Download Image</option>
+                                <option value="Scroll">Scroll</option>
+                                <option value="Error Check">Error Check</option>
+                                <option value="Wait for">Wait for</option>
+                            </select>
+                            <button id="addStepBtn" class="toolbar-btn">➕</button>
+                            <button id="removeStepBtn" class="toolbar-btn">➖</button>
+                        </div>
+                    </div>
+                    <div class="tree-view" id="treeView">
+                        <!-- Dynamic Nodes -->
+                    </div>
+                </div>
+
+                <!-- Config Tab -->
+                <div class="tab-content" id="tab-useragent" style="padding: 15px;">
+                    <div style="margin-bottom: 20px;">
+                        <label style="font-weight: 600; display: block; margin-bottom: 8px;">Browser Type:</label>
+                        <select id="browserType" class="form-select" style="width: 100%; margin-bottom: 15px;">
+                            <option value="Isolated">Isolated Project Chromium (Recommended)</option>
+                            <option value="System">System Google Chrome</option>
+                        </select>
+
+
+                        <label style="font-weight: 600; display: block; margin-bottom: 8px;">Automation Profile Name
+                            (e.g. GeminiBot):</label>
+                        <div style="display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap;">
+                            <input type="text" id="chromeProfile" class="form-input" style="flex: 1; min-width: 100px;"
+                                placeholder="GeminiBot">
+                            <button type="button" id="openProfileBtn" class="primary-btn"
+                                style="white-space: nowrap; background-color: #3498db; border-color: #2980b9;">
+                                🌐 Open Browser to Login
+                            </button>
+                            <a href="/vnc" target="_blank" class="primary-btn" id="viewScreenBtn"
+                                style="white-space: nowrap; background-color: #2ecc71; border-color: #27ae60; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; font-size: 13px;"
+                                title="Open the interactive web screen to see and control the browser">
+                                🖥️ View Screen
+                            </a>
+                        </div>
+                        <label class="checkbox-label" style="font-size: 12px; color: #d35400; display: block;">
+                            <input type="checkbox" id="forceCloseChrome" checked> Force close existing System Chrome
+                            instances (Fixes lock errors)
+                        </label>
+                        <label class="checkbox-label"
+                            style="font-size: 12px; color: #8e44ad; display: block; margin-top: 8px;">
+                            <input type="checkbox" id="runHeadless"> Run in Headless Mode (Invisible Browser - Faster)
+                        </label>
+                        <div style="margin-top: 12px;">
+                            <label style="font-weight: 600; display: block; margin-bottom: 5px;">Parallel Workers (Batch Concurrency):</label>
+                            <select id="scenarioConcurrency" class="form-select" style="width: 100%;">
+                                <option value="1">1 Worker (Sequential)</option>
+                                <option value="2">2 Workers</option>
+                                <option value="3">3 Workers</option>
+                                <option value="5" selected>5 Workers (Parallel)</option>
+                                <option value="8">8 Workers</option>
+                                <option value="10">10 Workers</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <label style="font-weight: 600; display: block; margin-bottom: 8px;">Custom User Agent
+                        (Optional):</label>
+                    <textarea id="userAgentString"
+                        class="form-input">Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36</textarea>
+
+                    <!-- Cloudflare R2 Settings Card -->
+                    <div style="margin-top: 20px; border: 1px solid var(--border-color); border-radius: 4px; padding: 12px; background: #fafafa;">
+                        <div style="font-weight: bold; font-size: 14px; margin-bottom: 12px; color: #e67e22; display: flex; align-items: center; gap: 6px;">
+                            ☁️ R2 Storage Settings
+                        </div>
+
+                        <!-- Bucket Select -->
+                        <div style="margin-bottom: 12px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                                <label style="font-weight: 600; margin: 0;">Bucket Name:</label>
+                                <a href="#" onclick="createNewBucket(event)" style="color: #e67e22; font-size: 11px; font-weight: 700; text-decoration: none;">+ CREATE BUCKET</a>
+                            </div>
+                            <div style="display: flex; gap: 6px; margin-bottom: 6px;">
+                                <input type="text" id="r2Bucket" placeholder="bucket-name" class="form-input" style="flex: 1; min-width: 0; box-sizing: border-box;" />
+                                <button type="button" id="btnFetchBuckets" onclick="fetchBuckets()" class="btn" style="padding: 4px 8px; font-size: 11px; white-space: nowrap;" title="Refresh bucket list">🔄 Fetch</button>
+                                <button type="button" id="btnDeleteBucket" onclick="deleteBucket()" class="btn" style="padding: 4px 8px; font-size: 11px; color: #e74c3c; border-color: #e74c3c; white-space: nowrap;" title="Delete selected bucket">🗑️ Delete</button>
+                            </div>
+                            <select id="r2BucketSelect" onchange="onBucketSelectChange()" class="form-select" style="width: 100%; box-sizing: border-box;">
+                                <option value="">— or select a fetched bucket —</option>
+                            </select>
+                            <div id="r2BucketMsg" style="font-size: 11px; margin-top: 4px;"></div>
+                        </div>
+
+                        <!-- R2 Endpoint -->
+                        <div style="margin-bottom: 12px;">
+                            <label style="font-weight: 600; display: block; margin-bottom: 5px;">R2 Endpoint URL / Account ID Endpoint:</label>
+                            <input type="text" id="r2Endpoint" placeholder="https://your-account-id.r2.cloudflarestorage.com" class="form-input" style="width: 100%; box-sizing: border-box;" oninput="liveValidateUrl('r2Endpoint')" />
+                            <div style="font-size: 10px; color: #7f8c8d; margin-top: 3px;">Get this from Cloudflare → R2 → Overview → Account ID Endpoint</div>
+                            <div class="field-err" id="err-r2Endpoint" style="display: none; color: #e74c3c; font-size: 11px; margin-top: 4px; font-weight: 600;">⚠️ Must be a valid https:// URL</div>
+                            <div class="field-ok" id="ok-r2Endpoint" style="display: none; color: #2ecc71; font-size: 11px; margin-top: 4px; font-weight: 600;">✓ Valid endpoint</div>
+                        </div>
+
+                        <!-- R2 Public Domain -->
+                        <div style="margin-bottom: 12px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                                <label style="font-weight: 600; margin: 0;">R2 Public Domain / Custom Domain (Optional):</label>
+                                <a href="#" onclick="event.preventDefault(); autoDetectBucketDomain();" style="color: #0284c7; font-size: 11px; font-weight: 700; text-decoration: none;">🔄 Auto-Detect Domain</a>
+                            </div>
+                            <input type="text" id="r2PublicDomain" placeholder="pub-xxxxxxxx.r2.dev or cdn.example.com" class="form-input" style="width: 100%; box-sizing: border-box;" onblur="this.value = this.value.trim().replace(/^https?:\/\//i, '').replace(/\s+/g, '-').replace(/\/+$/, '')" />
+                            <div style="font-size: 10px; color: #7f8c8d; margin-top: 3px;">Get this from Cloudflare → R2 → Bucket → Settings → Public Access</div>
+                        </div>
+
+                        <!-- Credentials Grid -->
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+                            <div>
+                                <label style="font-weight: 600; display: block; margin-bottom: 5px;">S3 Access Key ID:</label>
+                                <input type="text" id="r2KeyId" placeholder="access-key-id" class="form-input" style="width: 100%; box-sizing: border-box;" />
+                            </div>
+                            <div>
+                                <label style="font-weight: 600; display: block; margin-bottom: 5px;">S3 Secret Key:</label>
+                                <input type="password" id="r2Secret" placeholder="••••••••••••" class="form-input" style="width: 100%; box-sizing: border-box;" />
+                            </div>
+                        </div>
+
+                        <!-- Connection & Upload Actions -->
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 15px;">
+                            <button type="button" onclick="testConnection()" class="btn" style="padding: 6px; font-size: 11px; font-weight: bold; background-color: #f3f4f6;">⚡ Check Conn</button>
+                            <button type="button" onclick="testUpload()" class="btn" style="padding: 6px; font-size: 11px; font-weight: bold; background-color: #f3f4f6;">📥 Test Upload</button>
+                        </div>
+
+                        <!-- Cloudflare API Token -->
+                        <div style="border-top: 1px dashed #ddd; padding-top: 12px; margin-top: 12px;">
+                            <div style="font-weight: bold; font-size: 11px; text-transform: uppercase; color: #7f8c8d; margin-bottom: 6px;">Cloudflare Authentication</div>
+                            <label style="font-weight: 600; display: block; margin-bottom: 5px; font-size: 11px;">R2 API Token (Required for Create/Delete):</label>
+                            <input type="password" id="cfApiToken" placeholder="cfat_••••••••••••••••" class="form-input" style="width: 100%; box-sizing: border-box;" />
+                            <div style="font-size: 10px; color: #7f8c8d; margin-top: 3px;">Works for creating/listing/deleting buckets.</div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 20px;">
+                        <button id="saveConfigBtn" class="btn btn-primary" style="width: 100%;">💾 Save
+                            Configuration</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Panel -->
+            <div class="main-panel">
+                <div id="noSelectionMsg" style="color: #888; text-align: center; margin-top: 50px;">
+                    Select a step from the Operations Tree to configure it.
+                </div>
+
+                <!-- Navigate Config -->
+                <div id="config-Navigate" class="config-section group-box red-highlight">
+                    <div class="group-title">Navigate Action</div>
+                    <div class="form-row" style="margin-top: 15px;">
+                        <div class="form-label">Target URL(<span class="req-star">*</span>):</div>
+                        <input type="text" id="navUrl" class="form-input full-width" placeholder="https://example.com">
+                    </div>
+                </div>
+
+                <!-- Click Config -->
+                <div id="config-Click" class="config-section">
+                    <div class="group-box red-highlight">
+                        <div class="group-title">Click Target</div>
+                        <div class="form-row" style="margin-top: 15px;">
+                            <div class="form-label">Search Kind(<span class="req-star">*</span>):</div>
+                            <select id="clickSearchKind" class="form-select full-width">
+                                <option value="XPath">XPath</option>
+                                <option value="CSS">CSS</option>
+                                <option value="ID">ID</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-label">Value(<span class="req-star">*</span>):</div>
+                            <input type="text" id="clickSearchValue" class="form-input full-width"
+                                placeholder="//button">
+                        </div>
+                    </div>
+                    <div class="group-box">
+                        <div class="group-title">Mouse Options</div>
+                        <div class="form-row" style="margin-top: 10px;">
+                            <div class="form-label">Click Type:</div>
+                            <select id="clickType" class="form-select full-width">
+                                <option value="Simulated Click">Simulated Click</option>
+                                <option value="Real Mouse Click">Real Mouse Click</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="group-box" style="margin-top: 15px;">
+                        <div class="group-title">Return Link Options</div>
+                        <div class="form-row" style="margin-top: 10px; padding-left: 10px;">
+                            <label class="checkbox-label" style="font-size: 13px; font-weight: 500; color: #2c3e50; display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <input type="checkbox" id="clickReturnLink"> Return link from &lt;a&gt; tag (Extract href)
+                            </label>
+                        </div>
+                        <div style="font-size: 11px; color: #7f8c8d; margin-top: 4px; padding-left: 30px; line-height: 1.4;">
+                            When enabled, extracts the URL (<code>href</code>) from the target &lt;a&gt; tag and returns it in the API result. (Disabled by default).
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sleep Config -->
+                <div id="config-Sleep" class="config-section group-box">
+                    <div class="group-title">Sleep Action</div>
+                    <div class="form-row" style="margin-top: 15px;">
+                        <div class="form-label">Duration (ms)(<span class="req-star">*</span>):</div>
+                        <input type="number" id="sleepDuration" class="form-input" placeholder="2000"
+                            style="width: 100px;">
+                    </div>
+                </div>
+
+                <!-- Upload Image Config -->
+                <div id="config-UploadImage" class="config-section group-box red-highlight">
+                    <div class="group-title">Upload Image Action</div>
+                    <div class="form-row" style="margin-top: 15px;">
+                        <div class="form-label">Image URL(<span class="req-star">*</span>):</div>
+                        <input type="text" id="uploadImageUrl" class="form-input full-width"
+                            placeholder="https://example.com/image.jpg">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-label">Button Selector(<span class="req-star">*</span>):</div>
+                        <input type="text" id="uploadSelectorValue" class="form-input full-width"
+                            placeholder="#attach-btn or //button[@id='attach-btn']">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-label">Search Kind(<span class="req-star">*</span>):</div>
+                        <select id="uploadSearchKind" class="form-select">
+                            <option value="XPath">XPath</option>
+                            <option value="CSS">CSS</option>
+                            <option value="ID">ID</option>
+                        </select>
+                    </div>
+                    <div class="form-row" style="margin-top: 10px; padding-left: 120px; flex-direction: column; align-items: flex-start;">
+                        <div style="font-size: 12px; font-weight: 600; color: #2c3e50; margin-bottom: 5px;">Operation Source:</div>
+                        <select id="uploadImageSource" class="form-select" style="width: 290px; font-weight: 500;">
+                            <option value="system">⚡ Dynamic: Parameter (API / CSV Image)</option>
+                            <option value="scenario">🔒 Fixed: Scenario Image URL</option>
+                        </select>
+                        <div style="font-size: 11px; color: #7f8c8d; margin-top: 3px;">
+                            When Dynamic, the image URL will be replaced by API/CSV image inputs. When Fixed, it retains the scenario image URL above.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Send Text Config -->
+                <div id="config-SendText" class="config-section">
+                    <div class="group-box red-highlight">
+                        <div class="group-title">Target Element</div>
+                        <div class="form-row" style="margin-top: 15px;">
+                            <div class="form-label">Search Kind(<span class="req-star">*</span>):</div>
+                            <select id="sendTextSearchKind" class="form-select full-width">
+                                <option value="XPath">XPath</option>
+                                <option value="CSS">CSS</option>
+                                <option value="ID">ID</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-label">Value(<span class="req-star">*</span>):</div>
+                            <input type="text" id="sendTextSearchValue" class="form-input full-width"
+                                placeholder="//textarea">
+                        </div>
+                    </div>
+                    <div class="group-box red-highlight">
+                        <div class="group-title">Text Content</div>
+                        <div class="form-row" style="margin-top: 15px; align-items: flex-start;">
+                            <div class="form-label">Text to Send(<span class="req-star">*</span>):</div>
+                            <textarea id="sendTextValue" class="form-input full-width"
+                                placeholder="Hello, World!"></textarea>
+                        </div>
+                        <div class="form-row" style="margin-top: 10px; padding-left: 120px;">
+                            <label class="checkbox-label" style="font-size: 12px; color: #555;">
+                                <input type="checkbox" id="sendTextSimulateTyping"> Simulate real typing (slower, but
+                                bypasses bot detection)
+                            </label>
+                        </div>
+                        <div class="form-row" style="margin-top: 12px; padding-left: 120px; flex-direction: column; align-items: flex-start;">
+                            <div style="font-size: 12px; font-weight: 600; color: #2c3e50; margin-bottom: 5px;">Operation Source:</div>
+                            <select id="sendTextSource" class="form-select" style="width: 290px; font-weight: 500;">
+                                <option value="scenario">🔒 Fixed: Scenario Text (Login / Fixed Text)</option>
+                                <option value="system">⚡ Dynamic: Parameter (API / CSV)</option>
+                            </select>
+                            <div style="font-size: 11px; color: #7f8c8d; margin-top: 4px; line-height: 1.4;">
+                                • <strong>Fixed (Scenario Text)</strong>: Strictly uses the entered text above (will NOT be overwritten by API/CSV).<br>
+                                • <strong>Dynamic (Parameter)</strong>: Receives dynamic text from the API parameter (<code>texte</code>) or CSV column at runtime.
+                            </div>
+                        </div>
+                        <div id="sendTextParamKeyRow" class="form-row" style="margin-top: 10px; padding-left: 120px; align-items: center; display: none;">
+                            <div style="font-size: 12px; font-weight: 600; color: #555; margin-right: 10px; white-space: nowrap;">Parameter Key:</div>
+                            <input type="text" id="sendTextParamKey" class="form-input" style="width: 150px; font-size: 12px;" placeholder="texte (default)">
+                            <span style="font-size: 11px; color: #888; margin-left: 8px;">(Optional: match specific param or column name, e.g. <code>title</code>, <code>content</code>, <code>texte2</code>)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- HTML-Text Config -->
+                <div id="config-HTML-Text" class="config-section">
+                    <div class="group-box red-highlight">
+                        <div class="group-title">Target Element (Rich Text Editor / Element)</div>
+                        <div class="form-row" style="margin-top: 15px;">
+                            <div class="form-label">Search Kind(<span class="req-star">*</span>):</div>
+                            <select id="htmlTextSearchKind" class="form-select full-width">
+                                <option value="XPath">XPath</option>
+                                <option value="CSS">CSS</option>
+                                <option value="ID">ID</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-label">Value(<span class="req-star">*</span>):</div>
+                            <input type="text" id="htmlTextSearchValue" class="form-input full-width"
+                                placeholder="//div[@contenteditable='true'] or .note-editable">
+                        </div>
+                    </div>
+                    <div class="group-box red-highlight">
+                        <div class="group-title">HTML Content (Raw HTML / Brut HTML)</div>
+                        <div class="form-row" style="margin-top: 15px; align-items: flex-start;">
+                            <div class="form-label">HTML to Insert(<span class="req-star">*</span>):</div>
+                            <textarea id="htmlTextValue" class="form-input full-width" style="height: 120px; font-family: monospace; font-size: 12px;"
+                                placeholder="<h1>Title</h1>&#10;<p>Content paragraph...</p>&#10;<h2><a href='https://...'>Read More</a></h2>"></textarea>
+                        </div>
+                        <div class="form-row" style="margin-top: 12px; padding-left: 120px; flex-direction: column; align-items: flex-start;">
+                            <div style="font-size: 12px; font-weight: 600; color: #2c3e50; margin-bottom: 5px;">Operation Source:</div>
+                            <select id="htmlTextSource" class="form-select" style="width: 290px; font-weight: 500;">
+                                <option value="system">⚡ Dynamic: Parameter (API / CSV HTML Content)</option>
+                                <option value="scenario">🔒 Fixed: Scenario HTML (Template / Fixed HTML)</option>
+                            </select>
+                            <div style="font-size: 11px; color: #7f8c8d; margin-top: 4px; line-height: 1.4;">
+                                • <strong>Dynamic (Parameter)</strong>: Receives raw HTML from the API (<code>html</code>, <code>content</code>, or <code>texte</code>) or CSV column at runtime.<br>
+                                • <strong>Fixed (Scenario HTML)</strong>: Strictly uses the raw HTML code entered above (will NOT be overwritten by API/CSV).
+                            </div>
+                        </div>
+                        <div id="htmlTextParamKeyRow" class="form-row" style="margin-top: 10px; padding-left: 120px; align-items: center;">
+                            <div style="font-size: 12px; font-weight: 600; color: #555; margin-right: 10px; white-space: nowrap;">Parameter Key:</div>
+                            <input type="text" id="htmlTextParamKey" class="form-input" style="width: 150px; font-size: 12px;" placeholder="html (default)">
+                            <span style="font-size: 11px; color: #888; margin-left: 8px;">(Optional: match specific param or column name, e.g. <code>html</code>, <code>content</code>, <code>texte</code>, <code>body</code>)</span>
+                        </div>
+                    </div>
+                </div>
+
+                                <!-- Clipboard Config -->
+                <div id="config-Clipboard" class="config-section group-box" style="border-color: #86efac;">
+                    <div class="group-title" style="color: #15803d;">📋 Clipboard Action</div>
+                    <div style="font-size: 12px; color: #475569; margin: 10px 0 15px 0; line-height: 1.5; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 10px;">
+                        <strong>Returns the copied text</strong> from the scenario execution to the API and Dashboard.
+                        <ul style="margin: 6px 0 0 18px; padding: 0;">
+                            <li>Leave <strong>Target Element</strong> empty to read the last text copied to the clipboard (e.g. after clicking a Copy button).</li>
+                            <li>Or enter a selector to click the copy button or copy/extract its text automatically.</li>
+                        </ul>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-label">Search Kind (Optional):</div>
+                        <select id="clipboardSearchKind" class="form-select full-width">
+                            <option value="XPath">XPath</option>
+                            <option value="CSS">CSS</option>
+                            <option value="ID">ID</option>
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-label">Target Element (Optional):</div>
+                        <input type="text" id="clipboardSearchValue" class="form-input full-width"
+                            placeholder="Leave empty to read clipboard, or enter selector e.g. //*[@id='copyActiveBtn']">
+                    </div>
+                </div>
+
+                <!-- Download Image Config -->
+                <div id="config-DownloadImage" class="config-section group-box red-highlight">
+                    <div class="group-title">Download Image Action</div>
+                    <div class="form-row" style="margin-top: 15px;">
+                        <div class="form-label">Search Kind(<span class="req-star">*</span>):</div>
+                        <select id="downloadSearchKind" class="form-select full-width">
+                            <option value="XPath">XPath</option>
+                            <option value="CSS">CSS</option>
+                            <option value="ID">ID</option>
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-label">Target Image(<span class="req-star">*</span>):</div>
+                        <input type="text" id="downloadSelectorValue" class="form-input full-width"
+                            placeholder="//img[@class='generated-art']">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-label">Save Folder:</div>
+                        <input type="text" id="downloadSaveDir" class="form-input full-width"
+                            placeholder="downloads (will create in project folder)">
+                    </div>
+                </div>
+
+                <!-- Scroll Config -->
+                <div id="config-Scroll" class="config-section group-box">
+                    <div class="group-title">Scroll Action</div>
+                    <div class="form-row" style="margin-top: 15px;">
+                        <div class="form-label">Direction(<span class="req-star">*</span>):</div>
+                        <select id="scrollDirection" class="form-select">
+                            <option value="Bottom">Bottom</option>
+                            <option value="Top">Top</option>
+                        </select>
+                    </div>
+                    <div class="form-row" style="margin-top: 10px;">
+                        <div class="form-label">Container XPath (Optional):</div>
+                        <input type="text" id="scrollContainerValue" class="form-input full-width"
+                            placeholder="Leave blank to scroll the whole page">
+                    </div>
+                </div>
+
+                <!-- Error Check Config -->
+                <div id="config-ErrorCheck" class="config-section group-box" style="border-color: #fca5a5;">
+                    <div class="group-title" style="color: #dc2626;">🚨 Error Check</div>
+                    <p style="margin: 8px 0 14px; font-size: 12px; color: #64748b; line-height: 1.5;">
+                        Checks if an element is <strong>visible</strong> on the page.<br>
+                        If <strong>found</strong> → execution stops and the error message below is recorded.<br>
+                        If <strong>not found</strong> → the next step runs normally.
+                    </p>
+                    <div class="form-row">
+                        <div class="form-label">XPath / CSS / ID (<span class="req-star">*</span>):</div>
+                        <input type="text" id="errorCheckSelector" class="form-input full-width"
+                            placeholder="//div[@class='error-msg'] or .alert-error">
+                    </div>
+                    <div class="form-row" style="margin-top: 10px;">
+                        <div class="form-label">Search Kind:</div>
+                        <select id="errorCheckSearchKind" class="form-select" style="width: 120px;">
+                            <option value="XPath">XPath</option>
+                            <option value="CSS">CSS</option>
+                            <option value="ID">ID</option>
+                        </select>
+                    </div>
+                    <div class="form-row" style="margin-top: 10px;">
+                        <div class="form-label">Timeout (ms):</div>
+                        <input type="number" id="errorCheckTimeout" class="form-input"
+                            style="width: 90px;" placeholder="3000" value="3000">
+                        <span style="font-size: 11px; color: #94a3b8; margin-left: 8px;">How long to wait for the element before deciding it is absent.</span>
+                    </div>
+                    <div class="form-row" style="margin-top: 10px;">
+                        <div class="form-label">Error Message (<span class="req-star">*</span>):</div>
+                        <input type="text" id="errorCheckMessage" class="form-input full-width"
+                            placeholder="e.g. Error detected on page — generation failed">
+                    </div>
+                </div>
+
+                <!-- Wait for Config -->
+                <div id="config-Waitfor" class="config-section group-box" style="border-color: #c7d2fe;">
+                    <div class="group-title" style="color: #4f46e5;">⏳ Wait for</div>
+                    <p style="margin: 8px 0 14px; font-size: 12px; color: #64748b; line-height: 1.5;">
+                        Waits for an element or text to <strong>disappear (hide/detach)</strong> or <strong>appear (visible)</strong> before continuing.<br>
+                        Ideal for waiting until banners like <code>Generating direct rewrite...</code> disappear before copying.
+                    </p>
+                    <div class="form-row">
+                        <div class="form-label">XPath / CSS / Text (<span class="req-star">*</span>):</div>
+                        <input type="text" id="waitForSelector" class="form-input full-width"
+                            placeholder="//*[contains(text(), 'Generating direct rewrite...')] or Generating direct rewrite...">
+                    </div>
+                    <div class="form-row" style="margin-top: 10px;">
+                        <div class="form-label">Search Kind:</div>
+                        <select id="waitForSearchKind" class="form-select" style="width: 140px;">
+                            <option value="XPath">XPath</option>
+                            <option value="Text">Text Content</option>
+                            <option value="CSS">CSS</option>
+                            <option value="ID">ID</option>
+                        </select>
+                    </div>
+                    <div class="form-row" style="margin-top: 10px;">
+                        <div class="form-label">Wait Condition:</div>
+                        <select id="waitForCondition" class="form-select" style="width: 250px;">
+                            <option value="hidden">👻 Wait to Disappear (Hidden / Detached)</option>
+                            <option value="visible">👁️ Wait to Appear (Visible)</option>
+                        </select>
+                    </div>
+                    <div class="form-row" style="margin-top: 10px;">
+                        <div class="form-label">Max Timeout (ms):</div>
+                        <input type="number" id="waitForTimeout" class="form-input"
+                            style="width: 110px;" placeholder="60000" value="60000">
+                        <span style="font-size: 11px; color: #94a3b8; margin-left: 8px;">Max time to wait before throwing timeout error (default: 60000ms / 60s).</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div> <!-- Close View 1: Scenario Builder -->
+
+        <!-- View 2: Gemini CSV batch runner -->
+        <div id="view-csv" class="view-container">
+            <div class="csv-workspace">
+                <!-- CSV Sidebar (Inputs & Mappings) -->
+                <div class="csv-sidebar">
+                    <!-- Scenario config card -->
+                    <div class="csv-card">
+                        <div class="csv-card-title">⚙️ Select & Config Scenario</div>
+                        <div style="margin-bottom: 10px;">
+                            <label style="font-weight: 600; display: block; margin-bottom: 5px;">Scenario to Run:</label>
+                            <select id="csvScenarioSelect" class="form-select" style="width: 100%;" onchange="onCsvScenarioChange()">
+                                <option value="">📂 Load Scenario...</option>
+                            </select>
+                        </div>
+                        <div style="margin-bottom: 10px;">
+                            <label style="font-weight: 600; display: block; margin-bottom: 5px;">Parallel Workers (Concurrency):</label>
+                            <select id="csvConcurrencyInput" class="form-select" style="width: 100%;">
+                                <option value="1">1 Worker (Sequential)</option>
+                                <option value="2">2 Workers</option>
+                                <option value="3">3 Workers</option>
+                                <option value="5" selected>5 Workers (Parallel)</option>
+                                <option value="8">8 Workers</option>
+                                <option value="10">10 Workers</option>
+                            </select>
+                        </div>
+                        <div style="font-size: 11px; color: #64748b;" id="csvScenarioDetails">
+                            No scenario loaded.
+                        </div>
+                    </div>
+
+                    <!-- CSV upload card -->
+                    <div class="csv-card">
+                        <div class="csv-card-title">📄 Import CSV File</div>
+                        <div class="csv-dropzone" id="csvDropzone" onclick="document.getElementById('csvFileInput').click()">
+                            <span style="font-size: 24px; display: block; margin-bottom: 8px;">📤</span>
+                            <strong>Drag & Drop CSV</strong><br>
+                            <span style="font-size: 11px; color: #64748b;">or click to select file</span>
+                            <input type="file" id="csvFileInput" accept=".csv" style="display: none;" onchange="handleFileSelect(event)">
+                        </div>
+                        <div id="csvFileInfo" style="display: none; margin-top: 10px; font-size: 12px; padding: 8px; background: #f1f5f9; border-radius: 4px; display: flex; align-items: center; justify-content: space-between;">
+                            <span id="csvFileName" style="font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px;">file.csv</span>
+                            <button class="btn" style="padding: 2px 6px; font-size: 10px; color: #dc2626; border-color: #fca5a5;" onclick="clearCsv()">Remove</button>
+                        </div>
+                    </div>
+
+                    <!-- Column Mapping card -->
+                    <div class="csv-card" id="csvMappingCard" style="display: none;">
+                        <div class="csv-card-title">🗺️ Column Mappings</div>
+                        <div style="margin-bottom: 12px;">
+                            <label style="font-weight: 600; display: block; margin-bottom: 5px;">Text Input ({{texte}}):</label>
+                            <select id="mapTextCol" class="form-select" style="width: 100%;" onchange="resetBatchState()"></select>
+                            <div style="margin-top: 6px;">
+                                <textarea id="mapTextTemplate" class="form-input" style="width: 100%; font-size: 11px; height: 44px; resize: vertical; box-sizing: border-box;"
+                                          placeholder="Personalized template, e.g.: write me good seo title from this ({{texte}})"
+                                          oninput="resetBatchState()"></textarea>
+                                <div style="font-size: 10px; color: #64748b; margin-top: 2px;">
+                                    Optional: Wrap row value using <code>{{texte}}</code> (or leave empty for raw value).
+                                </div>
+                            </div>
+                        </div>
+                        <!-- HTML Input: Hidden by default, dynamically displayed only if scenario uses HTML -->
+                        <div id="mapHtmlRow" style="display: none; margin-bottom: 12px;">
+                            <label style="font-weight: 600; display: block; margin-bottom: 5px; color: #0284c7;">🌐 HTML Input ({{html}}):</label>
+                            <select id="mapHtmlCol" class="form-select" style="width: 100%;" onchange="resetBatchState()"></select>
+                            <div style="margin-top: 6px;">
+                                <textarea id="mapHtmlTemplate" class="form-input" style="width: 100%; font-size: 11px; height: 44px; resize: vertical; box-sizing: border-box;"
+                                          placeholder="Personalized HTML template, e.g.: <div class='post'>{{html}}</div>"
+                                          oninput="resetBatchState()"></textarea>
+                                <div style="font-size: 10px; color: #64748b; margin-top: 2px;">
+                                    Optional: Wrap HTML using <code>{{html}}</code> (or leave empty for raw value).
+                                </div>
+                            </div>
+                            <div style="font-size: 11px; color: #64748b; margin-top: 3px;">Auto-detected from scenario steps (HTML-Text / &#123;&#123;html&#125;&#125;)</div>
+                        </div>
+                        <div style="margin-bottom: 12px;">
+                            <label style="font-weight: 600; display: block; margin-bottom: 5px;">Image Input ({{image}}):</label>
+                            <select id="mapImageCol" class="form-select" style="width: 100%;" onchange="resetBatchState()"></select>
+                        </div>
+                        <div>
+                            <label style="font-weight: 600; display: block; margin-bottom: 5px;">Result Output Column:</label>
+                            <select id="mapResultCol" class="form-select" style="width: 100%;" onchange="onMapResultColChange()">
+                                <option value="__new__">+ Create New Column...</option>
+                            </select>
+                            <input type="text" id="mapResultColNew" class="form-input" style="width: 95%; margin-top: 8px;" placeholder="e.g. r2_image_url" value="r2_image_url">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CSV Main Pane (Progress & Logs) -->
+                <div class="csv-main">
+                    <!-- Progress & Actions -->
+                    <div class="csv-card">
+                        <div class="csv-card-title" style="justify-content: space-between; border: none; margin-bottom: 0;">
+                            <span>⚡ Batch Execution</span>
+                            <div style="display: flex; gap: 8px; align-items: center;">
+                                <button id="btnCsvStart" class="btn btn-success" onclick="startBatch()" disabled>▶ Start Batch</button>
+                                <button id="btnCsvPause" class="btn" style="color: #92400e; background: #fef3c7; border-color: #fcd34d; display: none;" onclick="pauseBatch()">⏸ Pause</button>
+                                <button id="btnCsvStop" class="btn" style="color: #dc2626; border-color: #fca5a5;" onclick="stopBatch()" disabled>⏹ Stop</button>
+                                <button id="btnCsvRetryAll" class="btn" style="color: #7c3aed; border-color: #c4b5fd; display: none;" onclick="retryAllFailed()">🔄 Retry All Failed</button>
+                                <button id="btnCsvDownload" class="btn btn-primary" onclick="downloadCsvResult()" disabled>💾 Download CSV</button>
+                            </div>
+                        </div>
+
+                        <!-- Progress Bar -->
+                        <div class="csv-progress-wrapper" id="csvProgressWrapper" style="display: none; margin-top: 15px;">
+                            <div class="csv-progress-text">
+                                <span id="csvProgressPercent">Running: 0%</span>
+                                <span id="csvProgressCount">0 / 0 rows</span>
+                            </div>
+                            <div class="csv-progress-bar-bg">
+                                <div class="csv-progress-bar-fill" id="csvProgressBarFill"></div>
+                            </div>
+                        </div>
+
+                        <!-- Stats Grid -->
+                        <div class="csv-stats-grid" style="margin-top: 15px;">
+                            <div class="csv-stat-box">
+                                <div class="csv-stat-val" id="statTotal">0</div>
+                                <div class="csv-stat-lbl">Total Rows</div>
+                            </div>
+                            <div class="csv-stat-box processing">
+                                <div class="csv-stat-val" id="statRunning">0</div>
+                                <div class="csv-stat-lbl">Running</div>
+                            </div>
+                            <div class="csv-stat-box success">
+                                <div class="csv-stat-val" id="statSuccess">0</div>
+                                <div class="csv-stat-lbl">Success</div>
+                            </div>
+                            <div class="csv-stat-box failed" id="statFailedBox"
+                                style="cursor: pointer;" title="Click to Retry All Failed rows"
+                                onclick="retryAllFailed()">
+                                <div class="csv-stat-val" id="statFailed">0</div>
+                                <div class="csv-stat-lbl">Failed <span style="font-size:10px;opacity:.7;">(click to retry all)</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Row Execution Logs Table -->
+                    <div class="csv-table-wrapper">
+                        <table class="csv-table">
+                            <thead id="csvTableHead">
+                                <tr>
+                                    <th style="width: 60px;">Row</th>
+                                    <th style="width: 250px;">Input Text</th>
+                                    <th style="width: 200px;">Input Image</th>
+                                    <th style="width: 100px;">Status</th>
+                                    <th>Result / Message</th>
+                                </tr>
+                            </thead>
+                            <tbody id="csvLogTableBody">
+                                <tr>
+                                    <td colspan="5" style="color: #64748b; text-align: center; padding: 40px 0;">
+                                        Upload a CSV file and load a scenario to begin batch processing.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div> <!-- Close .window -->
+
+    <script>
+        // State
+        let steps = [
+            { id: generateId(), type: 'Navigate', url: 'https://example.com' }
+        ];
+        let selectedId = steps[0].id;
+
+        function generateId() {
+            return Math.random().toString(36).substr(2, 9);
+        }
+
+        function getIconForType(type) {
+            if (type === 'Navigate') return '<span class="tree-icon icon-nav">🌐</span>';
+            if (type === 'Click') return '<span class="tree-icon icon-click">🖱️</span>';
+            if (type === 'Send Text') return '<span class="tree-icon" style="color:#27ae60">⌨️</span>';
+            if (type === 'HTML-Text' || type === 'html-text') return '<span class="tree-icon" style="color:#0284c7">🏷️</span>';
+            if (type === 'Clipboard' || type === 'clipboard') return '<span class="tree-icon" style="color:#10b981">📋</span>';
+            if (type === 'Sleep') return '<span class="tree-icon icon-sleep">⏱️</span>';
+            if (type === 'Upload Image') return '<span class="tree-icon" style="color:#e67e22">🖼️</span>';
+            if (type === 'Download Image') return '<span class="tree-icon" style="color:#8e44ad">⬇️</span>';
+            if (type === 'Scroll') return '<span class="tree-icon" style="color:#34495e">📜</span>';
+            if (type === 'Error Check') return '<span class="tree-icon" style="color:#dc2626">🚨</span>';
+            if (type === 'Wait for' || type === 'Wait For' || type === 'wait-for') return '<span class="tree-icon" style="color:#6366f1">⏳</span>';
+            return '⚙️';
+        }
+
+        // Render Tree
+        let draggedItemIndex = null;
+
+        function renderTree() {
+            const tree = document.getElementById('treeView');
+            tree.innerHTML = '';
+            steps.forEach((step, index) => {
+                const node = document.createElement('div');
+                node.className = 'tree-node' + (step.id === selectedId ? ' selected' : '');
+                node.draggable = true;
+
+                let badgeHtml = '';
+                if (step.type === 'Send Text') {
+                    if (step.isUsedBySystem === true) {
+                        const keyLabel = step.paramKey ? `⚡ ${step.paramKey}` : '⚡ System';
+                        badgeHtml = `<span class="step-badge badge-dynamic" title="Dynamic parameter from API/CSV">${keyLabel}</span>`;
+                    } else {
+                        badgeHtml = `<span class="step-badge badge-fixed" title="Fixed scenario text (not overwritten)">🔒 Scenario</span>`;
+                    }
+                } else if (step.type === 'HTML-Text' || step.type === 'html-text') {
+                    if (step.isUsedBySystem !== false) {
+                        const keyLabel = step.paramKey ? `⚡ ${step.paramKey}` : '⚡ System';
+                        badgeHtml = `<span class="step-badge badge-dynamic" title="Dynamic HTML from API/CSV">${keyLabel}</span>`;
+                    } else {
+                        badgeHtml = `<span class="step-badge badge-fixed" title="Fixed scenario HTML">🔒 Scenario</span>`;
+                    }
+                } else if (step.type === 'Upload Image') {
+                    if (step.isUsedBySystem !== false) {
+                        badgeHtml = `<span class="step-badge badge-dynamic" title="Dynamic image from API/CSV">⚡ System</span>`;
+                    } else {
+                        badgeHtml = `<span class="step-badge badge-fixed" title="Fixed scenario image">🔒 Scenario</span>`;
+                    }
+                } else if (step.type === 'Click') {
+                    if (step.returnLink === true) {
+                        badgeHtml = `<span class="step-badge" style="background:#e0f2fe; color:#0284c7; border: 1px solid #bae6fd;" title="Returns extracted link from <a> tag">🔗 Link</span>`;
+                    }
+                } else if (step.type === 'Clipboard' || step.type === 'clipboard') {
+                    badgeHtml = `<span class="step-badge" style="background:#dcfce7; color:#15803d; border: 1px solid #bbf7d0;" title="Returns copied text to API and Dashboard">📋 Clipboard</span>`;
+                } else if (step.type === 'Wait for' || step.type === 'Wait For' || step.type === 'wait-for') {
+                    const isDisappear = (step.waitCondition || 'hidden') === 'hidden';
+                    const condLabel = isDisappear ? '👻 Disappear' : '👁️ Appear';
+                    badgeHtml = `<span class="step-badge" style="background:#e0e7ff; color:#4338ca; border: 1px solid #c7d2fe;" title="Wait condition: ${condLabel}">⏳ ${condLabel}</span>`;
+                }
+
+                node.innerHTML = `
+                    <span style="cursor: grab; margin-right: 8px; color: #999;" title="Drag to reorder">☰</span>
+                    ${getIconForType(step.type)}
+                    <span style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${index + 1}. ${step.type}</span>
+                    ${badgeHtml}
+                `;
+                node.onclick = () => {
+                    saveCurrentForm();
+                    selectedId = step.id;
+                    renderTree();
+                    renderConfig();
+                };
+
+                // Drag and Drop Logic
+                node.addEventListener('dragstart', (e) => {
+                    saveCurrentForm(); // Save current edits before drag starts
+                    draggedItemIndex = index;
+                    e.dataTransfer.effectAllowed = 'move';
+                    setTimeout(() => node.style.opacity = '0.5', 0);
+                });
+
+                node.addEventListener('dragend', () => {
+                    node.style.opacity = '1';
+                    draggedItemIndex = null;
+                    document.querySelectorAll('.tree-node').forEach(n => {
+                        n.style.borderTop = '1px solid transparent';
+                        n.style.borderBottom = '1px solid transparent';
+                    });
+                });
+
+                node.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                    // Show a visual indicator where it will drop
+                    const rect = node.getBoundingClientRect();
+                    const midY = rect.top + rect.height / 2;
+                    if (e.clientY < midY) {
+                        node.style.borderTop = '2px solid #3498db';
+                        node.style.borderBottom = '1px solid transparent';
+                    } else {
+                        node.style.borderBottom = '2px solid #3498db';
+                        node.style.borderTop = '1px solid transparent';
+                    }
+                });
+
+                node.addEventListener('dragleave', () => {
+                    node.style.borderTop = '1px solid transparent';
+                    node.style.borderBottom = '1px solid transparent';
+                });
+
+                node.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    node.style.borderTop = '1px solid transparent';
+                    node.style.borderBottom = '1px solid transparent';
+                    if (draggedItemIndex === null || draggedItemIndex === index) return;
+
+                    const rect = node.getBoundingClientRect();
+                    const midY = rect.top + rect.height / 2;
+                    let targetIndex = e.clientY < midY ? index : index + 1;
+
+                    // Adjust index if dragging down
+                    if (draggedItemIndex < targetIndex) {
+                        targetIndex--;
+                    }
+
+                    const itemToMove = steps[draggedItemIndex];
+                    steps.splice(draggedItemIndex, 1); // Remove
+                    steps.splice(targetIndex, 0, itemToMove); // Insert
+
+                    renderTree();
+                });
+
+                tree.appendChild(node);
+            });
+        }
+
+        // Save form values to state before switching
+        function saveCurrentForm() {
+            if (!selectedId) return;
+            const step = steps.find(s => s.id === selectedId);
+            if (!step) return;
+
+            if (step.type === 'Navigate') {
+                step.url = document.getElementById('navUrl').value;
+            } else if (step.type === 'Click') {
+                step.searchKind = document.getElementById('clickSearchKind').value;
+                step.searchValue = document.getElementById('clickSearchValue').value;
+                step.clickType = document.getElementById('clickType').value;
+                step.returnLink = document.getElementById('clickReturnLink').checked;
+            } else if (step.type === 'Sleep') {
+                step.duration = document.getElementById('sleepDuration').value;
+            } else if (step.type === 'Upload Image') {
+                step.imageUrl = document.getElementById('uploadImageUrl').value;
+                step.searchValue = document.getElementById('uploadSelectorValue').value;
+                step.searchKind = document.getElementById('uploadSearchKind').value;
+                step.isUsedBySystem = (document.getElementById('uploadImageSource').value === 'system');
+            } else if (step.type === 'Send Text') {
+                step.searchKind = document.getElementById('sendTextSearchKind').value;
+                step.searchValue = document.getElementById('sendTextSearchValue').value;
+                step.textValue = document.getElementById('sendTextValue').value;
+                step.simulateTyping = document.getElementById('sendTextSimulateTyping').checked;
+                step.isUsedBySystem = (document.getElementById('sendTextSource').value === 'system');
+                step.paramKey = document.getElementById('sendTextParamKey').value.trim();
+            } else if (step.type === 'HTML-Text' || step.type === 'html-text') {
+                step.searchKind = document.getElementById('htmlTextSearchKind').value;
+                step.searchValue = document.getElementById('htmlTextSearchValue').value;
+                step.htmlValue = document.getElementById('htmlTextValue').value;
+                step.textValue = step.htmlValue;
+                step.isUsedBySystem = (document.getElementById('htmlTextSource').value === 'system');
+                step.paramKey = document.getElementById('htmlTextParamKey').value.trim();
+            } else if (step.type === 'Clipboard' || step.type === 'clipboard') {
+                step.searchKind = document.getElementById('clipboardSearchKind').value;
+                step.searchValue = document.getElementById('clipboardSearchValue').value;
+            } else if (step.type === 'Download Image') {
+                step.searchKind = document.getElementById('downloadSearchKind').value;
+                step.searchValue = document.getElementById('downloadSelectorValue').value;
+                step.saveDir = document.getElementById('downloadSaveDir').value;
+            } else if (step.type === 'Scroll') {
+                step.direction = document.getElementById('scrollDirection').value;
+                step.containerValue = document.getElementById('scrollContainerValue').value;
+            } else if (step.type === 'Error Check') {
+                step.searchKind   = document.getElementById('errorCheckSearchKind').value;
+                step.searchValue  = document.getElementById('errorCheckSelector').value;
+                step.timeoutMs    = parseInt(document.getElementById('errorCheckTimeout').value, 10) || 3000;
+                step.errorMessage = document.getElementById('errorCheckMessage').value;
+            } else if (step.type === 'Wait for' || step.type === 'Wait For' || step.type === 'wait-for') {
+                step.searchKind    = document.getElementById('waitForSearchKind').value;
+                step.searchValue   = document.getElementById('waitForSelector').value;
+                step.waitCondition = document.getElementById('waitForCondition').value || 'hidden';
+                step.timeoutMs     = parseInt(document.getElementById('waitForTimeout').value, 10) || 60000;
+            }
+        }
+
+        // Render Config Panel
+        function renderConfig() {
+            document.querySelectorAll('.config-section').forEach(el => el.classList.remove('active'));
+            const noSel = document.getElementById('noSelectionMsg');
+
+            const step = steps.find(s => s.id === selectedId);
+            if (!step) {
+                noSel.style.display = 'block';
+                return;
+            }
+
+            noSel.style.display = 'none';
+
+            const configElementId = 'config-' + step.type.replace(/\s+/g, '');
+            const configElement = document.getElementById(configElementId);
+            if (configElement) {
+                configElement.classList.add('active');
+            }
+
+            // Populate fields
+            if (step.type === 'Navigate') {
+                document.getElementById('navUrl').value = step.url || '';
+            } else if (step.type === 'Click') {
+                document.getElementById('clickSearchKind').value = step.searchKind || 'XPath';
+                document.getElementById('clickSearchValue').value = step.searchValue || '';
+                document.getElementById('clickType').value = step.clickType || 'Simulated Click';
+                document.getElementById('clickReturnLink').checked = (step.returnLink === true);
+            } else if (step.type === 'Sleep') {
+                document.getElementById('sleepDuration').value = step.duration || '1000';
+            } else if (step.type === 'Upload Image') {
+                document.getElementById('uploadImageUrl').value = step.imageUrl || '';
+                document.getElementById('uploadSelectorValue').value = step.searchValue || '';
+                document.getElementById('uploadSearchKind').value = step.searchKind || 'XPath';
+                document.getElementById('uploadImageSource').value = (step.isUsedBySystem !== false) ? 'system' : 'scenario';
+            } else if (step.type === 'Send Text') {
+                document.getElementById('sendTextSearchKind').value = step.searchKind || 'XPath';
+                document.getElementById('sendTextSearchValue').value = step.searchValue || '';
+                document.getElementById('sendTextValue').value = step.textValue || '';
+                document.getElementById('sendTextSimulateTyping').checked = step.simulateTyping || false;
+
+                const isSystem = (step.isUsedBySystem === true);
+                document.getElementById('sendTextSource').value = isSystem ? 'system' : 'scenario';
+                document.getElementById('sendTextParamKey').value = step.paramKey || '';
+                document.getElementById('sendTextParamKeyRow').style.display = isSystem ? 'flex' : 'none';
+            } else if (step.type === 'HTML-Text' || step.type === 'html-text') {
+                document.getElementById('htmlTextSearchKind').value = step.searchKind || 'XPath';
+                document.getElementById('htmlTextSearchValue').value = step.searchValue || '';
+                document.getElementById('htmlTextValue').value = step.htmlValue || step.textValue || '';
+
+                const isSystem = (step.isUsedBySystem !== false);
+                document.getElementById('htmlTextSource').value = isSystem ? 'system' : 'scenario';
+                document.getElementById('htmlTextParamKey').value = step.paramKey || '';
+                document.getElementById('htmlTextParamKeyRow').style.display = isSystem ? 'flex' : 'none';
+            } else if (step.type === 'Clipboard' || step.type === 'clipboard') {
+                document.getElementById('clipboardSearchKind').value = step.searchKind || 'XPath';
+                document.getElementById('clipboardSearchValue').value = step.searchValue || '';
+            } else if (step.type === 'Download Image') {
+                document.getElementById('downloadSearchKind').value = step.searchKind || 'XPath';
+                document.getElementById('downloadSelectorValue').value = step.searchValue || '';
+                document.getElementById('downloadSaveDir').value = step.saveDir || '';
+            } else if (step.type === 'Scroll') {
+                document.getElementById('scrollDirection').value = step.direction || 'Bottom';
+                document.getElementById('scrollContainerValue').value = step.containerValue || '';
+            } else if (step.type === 'Error Check') {
+                document.getElementById('errorCheckSearchKind').value = step.searchKind || 'XPath';
+                document.getElementById('errorCheckSelector').value   = step.searchValue || '';
+                document.getElementById('errorCheckTimeout').value    = step.timeoutMs   || 3000;
+                document.getElementById('errorCheckMessage').value    = step.errorMessage || '';
+            } else if (step.type === 'Wait for' || step.type === 'Wait For' || step.type === 'wait-for') {
+                document.getElementById('waitForSearchKind').value  = step.searchKind || 'XPath';
+                document.getElementById('waitForSelector').value    = step.searchValue || '';
+                document.getElementById('waitForCondition').value   = step.waitCondition || 'hidden';
+                document.getElementById('waitForTimeout').value     = step.timeoutMs || 60000;
+            }
+        }
+
+        // Live input listeners for Send Text, HTML-Text & Upload Image dynamic toggles
+        document.getElementById('sendTextSource').addEventListener('change', (e) => {
+            const isSystem = (e.target.value === 'system');
+            document.getElementById('sendTextParamKeyRow').style.display = isSystem ? 'flex' : 'none';
+            if (selectedId) {
+                const s = steps.find(item => item.id === selectedId);
+                if (s && s.type === 'Send Text') {
+                    s.isUsedBySystem = isSystem;
+                    renderTree();
+                }
+            }
+        });
+
+        document.getElementById('sendTextParamKey').addEventListener('input', (e) => {
+            if (selectedId) {
+                const s = steps.find(item => item.id === selectedId);
+                if (s && s.type === 'Send Text') {
+                    s.paramKey = e.target.value.trim();
+                    renderTree();
+                }
+            }
+        });
+
+        document.getElementById('htmlTextSource').addEventListener('change', (e) => {
+            const isSystem = (e.target.value === 'system');
+            document.getElementById('htmlTextParamKeyRow').style.display = isSystem ? 'flex' : 'none';
+            if (selectedId) {
+                const s = steps.find(item => item.id === selectedId);
+                if (s && (s.type === 'HTML-Text' || s.type === 'html-text')) {
+                    s.isUsedBySystem = isSystem;
+                    renderTree();
+                }
+            }
+        });
+
+        document.getElementById('htmlTextParamKey').addEventListener('input', (e) => {
+            if (selectedId) {
+                const s = steps.find(item => item.id === selectedId);
+                if (s && (s.type === 'HTML-Text' || s.type === 'html-text')) {
+                    s.paramKey = e.target.value.trim();
+                    renderTree();
+                }
+            }
+        });
+
+        document.getElementById('uploadImageSource').addEventListener('change', (e) => {
+            const isSystem = (e.target.value === 'system');
+            if (selectedId) {
+                const s = steps.find(item => item.id === selectedId);
+                if (s && s.type === 'Upload Image') {
+                    s.isUsedBySystem = isSystem;
+                    renderTree();
+                }
+            }
+        });
+
+        document.getElementById('clickReturnLink').addEventListener('change', (e) => {
+            if (selectedId) {
+                const s = steps.find(item => item.id === selectedId);
+                if (s && s.type === 'Click') {
+                    s.returnLink = e.target.checked;
+                    renderTree();
+                }
+            }
+        });
+
+        // Add / Remove buttons
+        document.getElementById('addStepBtn').onclick = () => {
+            saveCurrentForm();
+            const type = document.getElementById('newStepType').value;
+            const newStep = { id: generateId(), type };
+            if (type === 'Click') {
+                newStep.returnLink = false;
+            } else if (type === 'Send Text') {
+                newStep.isUsedBySystem = false;
+            } else if (type === 'HTML-Text') {
+                newStep.isUsedBySystem = true;
+            } else if (type === 'Upload Image') {
+                newStep.isUsedBySystem = true;
+            } else if (type === 'Clipboard') {
+                newStep.searchKind = 'XPath';
+                newStep.searchValue = '';
+            } else if (type === 'Wait for') {
+                newStep.searchKind = 'XPath';
+                newStep.searchValue = '//*[contains(text(), "Generating direct rewrite...")]';
+                newStep.waitCondition = 'hidden';
+                newStep.timeoutMs = 60000;
+            }
+            steps.push(newStep);
+            selectedId = newStep.id;
+            renderTree();
+            renderConfig();
+        };
+
+        document.getElementById('removeStepBtn').onclick = () => {
+            if (!selectedId) return;
+            const idx = steps.findIndex(s => s.id === selectedId);
+            steps.splice(idx, 1);
+            selectedId = steps.length > 0 ? steps[Math.max(0, idx - 1)].id : null;
+            renderTree();
+            renderConfig();
+        };
+
+        // Tab Switching
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                btn.classList.add('active');
+                document.getElementById('tab-' + btn.getAttribute('data-tab')).classList.add('active');
+            });
+        });
+
+        // -------------------------------------------------------------
+        // RUN SCENARIO & OPEN PROFILE LOGIC
+        // -------------------------------------------------------------
+
+        // Open Profile Button Logic
+        document.getElementById('openProfileBtn').addEventListener('click', async () => {
+            const browserType = document.getElementById('browserType').value;
+            const chromeProfile = document.getElementById('chromeProfile').value;
+
+            if (!chromeProfile) {
+                alert("Please enter an Automation Profile Name first.");
+                return;
+            }
+
+            const btn = document.getElementById('openProfileBtn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '⏳ Opening...';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('/api/open-profile', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        browserType,
+                        chromeProfile,
+                        forceCloseChrome: document.getElementById('forceCloseChrome').checked
+                    })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                    let defaultVncUrl = `http://${window.location.hostname}:6080/vnc.html?autoconnect=true&resize=remote`;
+                    if (window.location.hostname.includes('.instabox.tech') && window.location.hostname.startsWith('3000-')) {
+                        defaultVncUrl = `https://${window.location.hostname.replace(/^3000-/, '6080-')}/vnc.html?autoconnect=true&resize=remote`;
+                    }
+                    const vncUrl = result.vncUrl || defaultVncUrl;
+                    window.open(vncUrl, '_blank');
+                } else {
+                    alert(`❌ Error opening browser:\n${result.error}`);
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+            } catch (e) {
+                alert(`❌ Connection error: ${e.message}`);
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        });
+
+        // Run Scenario Logic
+        document.getElementById('runScenarioBtn').addEventListener('click', async () => {
+            saveCurrentForm();
+
+            if (steps.length === 0) {
+                alert("Please add at least one step to run.");
+                return;
+            }
+
+            const payload = {
+                scenarioName: document.getElementById('scenarioName').value,
+                userAgent: document.getElementById('userAgentString').value,
+                browserType: document.getElementById('browserType').value,
+                chromeProfile: document.getElementById('chromeProfile').value,
+                forceCloseChrome: document.getElementById('forceCloseChrome').checked,
+                headless: document.getElementById('runHeadless').checked,
+                r2Endpoint: document.getElementById('r2Endpoint').value,
+                r2Bucket: document.getElementById('r2Bucket').value,
+                r2KeyId: document.getElementById('r2KeyId').value,
+                r2Secret: document.getElementById('r2Secret').value,
+                r2PublicDomain: document.getElementById('r2PublicDomain').value,
+                cfApiToken: document.getElementById('cfApiToken').value,
+                steps: steps
+            };
+
+            const btn = document.getElementById('runScenarioBtn');
+            btn.innerText = "⏳ Running...";
+            btn.disabled = true;
+            const resetBtn = () => { btn.innerText = "▶ Run Scenario"; btn.disabled = false; };
+
+            // ── 1. Submit job ──────────────────────────────────────────
+            let queued;
+            try {
+                const res = await fetch('/api/run-task', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                queued = await res.json();
+            } catch (err) {
+                alert('⚠️ Cannot connect to backend server.');
+                resetBtn();
+                return;
+            }
+            if (!queued.success) {
+                alert(`❌ Error: ${queued.error}`);
+                resetBtn();
+                return;
+            }
+
+            // ── 2. Poll until done ─────────────────────────────────────
+            const jobId = queued.jobId;
+            console.log('[Run] Job enqueued:', jobId);
+            let finalResult = null;
+
+            while (true) {
+                await new Promise(r => setTimeout(r, 2000));
+                let job;
+                try {
+                    const pollRes = await fetch(`/api/job/${jobId}`);
+                    job = await pollRes.json();
+                } catch (netErr) {
+                    console.warn('[Run] Poll network error, retrying...', netErr.message);
+                    continue;
+                }
+                console.log('[Run] Poll:', job.status, job.result);
+
+                if (job.status === 'completed') {
+                    finalResult = job.result || {};
+                    break;
+                }
+                if (job.status === 'failed') {
+                    alert(`❌ Scenario failed:\n${job.error}`);
+                    resetBtn();
+                    return;
+                }
+                // 'waiting' | 'active' | undefined (404 / server restarted) → keep polling
+            }
+
+            // ── 3. Show result ─────────────────────────────────────────
+            console.log('[Run] Final result:', finalResult);
+            const returnedText = finalResult.text || finalResult.clipboard || (finalResult.result && (finalResult.result.text || finalResult.result.clipboard)) || '';
+            showResultModal(finalResult.imageUrl || '', finalResult.r2UploadError || null, finalResult.link || finalResult.url || '', returnedText);
+            resetBtn();
+        });
+
+
+
+        // -------------------------------------------------------------
+        // SAVE & LOAD LOGIC
+        // -------------------------------------------------------------
+
+        let savedScenarios = [];
+
+        function loadScenarioDetails(scenario) {
+            if (!scenario) return;
+            document.getElementById('scenarioName').value = scenario.scenarioName;
+            document.getElementById('userAgentString').value = scenario.userAgent || '';
+            document.getElementById('browserType').value = scenario.browserType || 'Isolated';
+            document.getElementById('chromeProfile').value = scenario.chromeProfile || '';
+            document.getElementById('forceCloseChrome').checked = scenario.forceCloseChrome || false;
+            document.getElementById('runHeadless').checked = scenario.headless || false;
+            document.getElementById('scenarioConcurrency').value = scenario.concurrency || 5;
+
+            document.getElementById('r2Endpoint').value = scenario.r2Endpoint || '';
+            document.getElementById('r2Bucket').value = scenario.r2Bucket || '';
+            document.getElementById('r2KeyId').value = scenario.r2KeyId || '';
+            document.getElementById('r2Secret').value = scenario.r2Secret || '';
+            document.getElementById('r2PublicDomain').value = scenario.r2PublicDomain || '';
+            document.getElementById('cfApiToken').value = scenario.cfApiToken || '';
+
+            const bucketSelect = document.getElementById('r2BucketSelect');
+            bucketSelect.innerHTML = '<option value="">— or select a fetched bucket —</option>';
+            if (scenario.r2Bucket) {
+                const opt = document.createElement('option');
+                opt.value = scenario.r2Bucket;
+                opt.innerText = scenario.r2Bucket;
+                opt.selected = true;
+                bucketSelect.appendChild(opt);
+            }
+            document.getElementById('r2BucketMsg').innerText = '';
+
+            steps = scenario.steps || [];
+            const sendTextCount = steps.filter(s => s.type === 'Send Text').length;
+            steps.forEach(step => {
+                if (step.type === 'Send Text' && step.isUsedBySystem === undefined) {
+                    step.isUsedBySystem = (sendTextCount === 1);
+                } else if ((step.type === 'HTML-Text' || step.type === 'html-text') && step.isUsedBySystem === undefined) {
+                    step.isUsedBySystem = true;
+                } else if (step.type === 'Upload Image' && step.isUsedBySystem === undefined) {
+                    step.isUsedBySystem = true;
+                }
+            });
+
+            if (steps.length > 0) {
+                selectedId = steps[0].id;
+            } else {
+                selectedId = null;
+            }
+
+            renderTree();
+            renderConfig();
+        }
+
+        async function loadSavedScenarios() {
+            try {
+                const res = await fetch('/api/scenarios');
+                savedScenarios = await res.json();
+                
+                const select = document.getElementById('loadScenarioSelect');
+                select.innerHTML = '<option value="">📂 Load Scenario...</option>';
+                
+                const csvSelect = document.getElementById('csvScenarioSelect');
+                csvSelect.innerHTML = '<option value="">📂 Load Scenario...</option>';
+
+                savedScenarios.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.scenarioName;
+                    opt.innerText = s.scenarioName;
+                    select.appendChild(opt);
+
+                    const csvOpt = document.createElement('option');
+                    csvOpt.value = s.scenarioName;
+                    csvOpt.innerText = s.scenarioName;
+                    csvSelect.appendChild(csvOpt);
+                });
+
+                // Auto-load scenario details matching current name input if it exists
+                const currentName = document.getElementById('scenarioName').value;
+                const matched = savedScenarios.find(s => s.scenarioName === currentName);
+                if (matched) {
+                    loadScenarioDetails(matched);
+                }
+            } catch (e) {
+                console.error("Failed to load scenarios", e);
+            }
+        }
+
+        document.getElementById('saveScenarioBtn').addEventListener('click', async () => {
+            saveCurrentForm();
+            const payload = {
+                scenarioName: document.getElementById('scenarioName').value,
+                userAgent: document.getElementById('userAgentString').value,
+                browserType: document.getElementById('browserType').value,
+                chromeProfile: document.getElementById('chromeProfile').value,
+                forceCloseChrome: document.getElementById('forceCloseChrome').checked,
+                headless: document.getElementById('runHeadless').checked,
+                concurrency: parseInt(document.getElementById('scenarioConcurrency').value || '5', 10),
+                r2Endpoint: document.getElementById('r2Endpoint').value,
+                r2Bucket: document.getElementById('r2Bucket').value,
+                r2KeyId: document.getElementById('r2KeyId').value,
+                r2Secret: document.getElementById('r2Secret').value,
+                r2PublicDomain: document.getElementById('r2PublicDomain').value,
+                cfApiToken: document.getElementById('cfApiToken').value,
+                steps: steps
+            };
+            if (!payload.scenarioName) {
+                alert("Please enter a Scenario Name before saving.");
+                return;
+            }
+
+            const btn = document.getElementById('saveScenarioBtn');
+            btn.innerText = "⏳ Saving...";
+
+            try {
+                const res = await fetch('/api/scenarios', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (res.ok) {
+                    btn.innerText = "✅ Saved!";
+                    setTimeout(() => btn.innerText = "💾 Save", 2000);
+                    loadSavedScenarios();
+                } else {
+                    alert("Error saving scenario.");
+                    btn.innerText = "💾 Save";
+                }
+            } catch (e) {
+                alert("Error connecting to server to save.");
+                btn.innerText = "💾 Save";
+            }
+        });
+
+        // Mirror the config tab save button to the main save button with visual feedback
+        document.getElementById('saveConfigBtn').addEventListener('click', () => {
+            const configBtn = document.getElementById('saveConfigBtn');
+            const originalText = configBtn.innerHTML;
+            configBtn.innerHTML = "⏳ Saving...";
+            configBtn.disabled = true;
+
+            const saveBtn = document.getElementById('saveScenarioBtn');
+            saveBtn.click();
+
+            setTimeout(() => {
+                configBtn.innerHTML = "✅ Saved!";
+                setTimeout(() => {
+                    configBtn.innerHTML = originalText;
+                    configBtn.disabled = false;
+                }, 2000);
+            }, 1000);
+        });
+
+        document.getElementById('deleteScenarioBtn').addEventListener('click', async () => {
+            const name = document.getElementById('scenarioName').value;
+            if (!name || name === "New Scenario") {
+                alert("Please select or type a valid scenario name to delete.");
+                return;
+            }
+            if (confirm(`Are you sure you want to delete the scenario "${name}"?`)) {
+                try {
+                    const res = await fetch(`/api/scenarios/${encodeURIComponent(name)}`, { method: 'DELETE' });
+                    if (res.ok) {
+                        alert(`Deleted scenario "${name}"`);
+                        document.getElementById('scenarioName').value = "New Scenario";
+                        steps = [];
+                        renderTree();
+                        renderConfig();
+                        loadSavedScenarios();
+                    } else {
+                        alert("Failed to delete scenario.");
+                    }
+                } catch (e) {
+                    alert("Network error while deleting.");
+                }
+            }
+        });
+
+        document.getElementById('loadScenarioSelect').addEventListener('change', (e) => {
+            const name = e.target.value;
+            if (!name) return;
+
+            const scenario = savedScenarios.find(s => s.scenarioName === name);
+            if (scenario) {
+                loadScenarioDetails(scenario);
+            }
+            e.target.value = "";
+        });
+
+        // -------------------------------------------------------------
+        // R2 STORAGE INTERFACE SCRIPTS
+        // -------------------------------------------------------------
+        function liveValidateUrl(id) {
+            const input = document.getElementById(id);
+            const val = input.value.trim();
+            const errEl = document.getElementById('err-' + id);
+            const okEl = document.getElementById('ok-' + id);
+
+            if (!val) {
+                input.classList.remove('is-invalid', 'is-valid');
+                if (errEl) errEl.style.display = 'none';
+                if (okEl) okEl.style.display = 'none';
+                return false;
+            }
+
+            const pattern = /^https:\/\/[a-zA-Z0-9.-]+\.r2\.cloudflarestorage\.com\/?$/i;
+            if (pattern.test(val)) {
+                input.classList.add('is-valid');
+                input.classList.remove('is-invalid');
+                if (errEl) errEl.style.display = 'none';
+                if (okEl) okEl.style.display = 'block';
+                return true;
+            } else {
+                input.classList.add('is-invalid');
+                input.classList.remove('is-valid');
+                if (errEl) errEl.style.display = 'block';
+                if (okEl) okEl.style.display = 'none';
+                return false;
+            }
+        }
+
+        async function onBucketSelectChange() {
+            const select = document.getElementById('r2BucketSelect');
+            if (select.value) {
+                document.getElementById('r2Bucket').value = select.value;
+                await autoDetectBucketDomain(select.value);
+            }
+        }
+
+        async function autoDetectBucketDomain(bucketParam) {
+            const endpoint = document.getElementById('r2Endpoint').value;
+            const cfApiToken = document.getElementById('cfApiToken').value;
+            const bucket = bucketParam || document.getElementById('r2Bucket').value;
+            const msgEl = document.getElementById('r2BucketMsg');
+
+            if (!endpoint || !cfApiToken || !bucket) return;
+
+            try {
+                const res = await fetch('/api/r2/bucket-domain', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ endpoint, cfApiToken, bucket })
+                });
+                const data = await res.json();
+                if (data.success && data.domain) {
+                    document.getElementById('r2PublicDomain').value = data.domain;
+                    if (msgEl) {
+                        msgEl.style.color = '#2ecc71';
+                        msgEl.innerText = `✓ Public domain active: ${data.domain}`;
+                    }
+                }
+            } catch (_) {}
+        }
+
+        async function fetchBuckets() {
+            const endpoint = document.getElementById('r2Endpoint').value;
+            const cfApiToken = document.getElementById('cfApiToken').value;
+            const accessKey = document.getElementById('r2KeyId').value;
+            const secretKey = document.getElementById('r2Secret').value;
+            const btn = document.getElementById('btnFetchBuckets');
+            const msgEl = document.getElementById('r2BucketMsg');
+
+            if (!endpoint) {
+                alert('Please enter an R2 Endpoint URL first.');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerText = "⏳...";
+            msgEl.innerText = "";
+
+            try {
+                const res = await fetch('/api/r2/buckets', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ endpoint, cfApiToken, accessKey, secretKey })
+                });
+                const data = await res.json();
+                if (data.success && data.buckets) {
+                    const select = document.getElementById('r2BucketSelect');
+                    const currentBucket = document.getElementById('r2Bucket').value;
+                    select.innerHTML = '<option value="">— or select a fetched bucket —</option>';
+                    data.buckets.forEach(b => {
+                        const opt = document.createElement('option');
+                        opt.value = b;
+                        opt.innerText = b;
+                        if (b === currentBucket) opt.selected = true;
+                        select.appendChild(opt);
+                    });
+                    msgEl.style.color = '#2ecc71';
+                    msgEl.innerText = `Fetched ${data.buckets.length} bucket(s).`;
+                } else {
+                    msgEl.style.color = '#e74c3c';
+                    msgEl.innerText = data.error || 'Failed to fetch buckets.';
+                }
+            } catch (err) {
+                msgEl.style.color = '#e74c3c';
+                msgEl.innerText = err.message;
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "🔄 Fetch";
+            }
+        }
+
+        async function createNewBucket(e) {
+            e.preventDefault();
+            const endpoint = document.getElementById('r2Endpoint').value;
+            const cfApiToken = document.getElementById('cfApiToken').value;
+            const accessKey = document.getElementById('r2KeyId').value;
+            const secretKey = document.getElementById('r2Secret').value;
+
+            if (!endpoint || (!cfApiToken && (!accessKey || !secretKey))) {
+                alert('Please enter R2 Endpoint URL and Cloudflare API Token (or S3 Keys) to create a bucket.');
+                return;
+            }
+
+            const bucketName = prompt('Enter a name for the new Cloudflare R2 bucket:');
+            if (!bucketName || !bucketName.trim()) return;
+
+            try {
+                const res = await fetch('/api/r2/create-bucket', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ endpoint, cfApiToken, accessKey, secretKey, bucketName: bucketName.trim() })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    const finalBucket = data.bucket || bucketName.trim().toLowerCase();
+                    alert(data.message || `Bucket "${finalBucket}" created successfully!`);
+                    document.getElementById('r2Bucket').value = finalBucket;
+                    if (data.domain) {
+                        document.getElementById('r2PublicDomain').value = data.domain;
+                    }
+                    await fetchBuckets();
+                    const sel = document.getElementById('r2BucketSelect');
+                    if (sel) sel.value = finalBucket;
+                } else {
+                    alert('Error creating bucket: ' + (data.error || 'Unknown error'));
+                }
+            } catch (err) {
+                alert('Request failed: ' + err.message);
+            }
+        }
+
+        async function deleteBucket() {
+            const endpoint = document.getElementById('r2Endpoint').value;
+            const cfApiToken = document.getElementById('cfApiToken').value;
+            const accessKey = document.getElementById('r2KeyId').value;
+            const secretKey = document.getElementById('r2Secret').value;
+            const bucketName = document.getElementById('r2Bucket').value;
+
+            if (!bucketName) {
+                alert('Please select or enter a bucket name first.');
+                return;
+            }
+
+            if (!confirm(`Are you sure you want to delete the bucket "${bucketName}"? This action is permanent!`)) {
+                return;
+            }
+
+            const btn = document.getElementById('btnDeleteBucket');
+            btn.disabled = true;
+            btn.innerText = "⏳...";
+
+            try {
+                const res = await fetch('/api/r2/delete-bucket', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ endpoint, cfApiToken, bucketName, accessKey, secretKey })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert(data.message);
+                    document.getElementById('r2Bucket').value = '';
+                    await fetchBuckets();
+                } else {
+                    alert('Error deleting bucket: ' + (data.error || 'Unknown error'));
+                }
+            } catch (err) {
+                alert('Request failed: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "🗑️ Delete";
+            }
+        }
+
+        async function testConnection() {
+            const endpoint = document.getElementById('r2Endpoint').value;
+            const bucket = document.getElementById('r2Bucket').value;
+            const accessKey = document.getElementById('r2KeyId').value;
+            const secretKey = document.getElementById('r2Secret').value;
+
+            if (!endpoint || !bucket) {
+                alert('R2 Endpoint URL and Bucket Name are required to test connection.');
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/r2/test', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ endpoint, bucket, accessKey, secretKey })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert(data.message);
+                } else {
+                    alert('Connection failed: ' + data.error);
+                }
+            } catch (err) {
+                alert('Connection test failed: ' + err.message);
+            }
+        }
+
+        async function testUpload() {
+            const endpoint = document.getElementById('r2Endpoint').value;
+            const bucket = document.getElementById('r2Bucket').value;
+            const accessKey = document.getElementById('r2KeyId').value;
+            const secretKey = document.getElementById('r2Secret').value;
+            const r2PublicDomain = document.getElementById('r2PublicDomain').value;
+            const cfApiToken = document.getElementById('cfApiToken').value;
+
+            if (!endpoint || !bucket || !accessKey || !secretKey) {
+                alert('All R2 storage parameters (Endpoint, Bucket, Access Key, Secret Key) are required for testing upload.');
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/r2/upload-test', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ endpoint, bucket, accessKey, secretKey, r2PublicDomain, cfApiToken })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    if (data.domain && !r2PublicDomain) {
+                        document.getElementById('r2PublicDomain').value = data.domain;
+                    }
+                    alert(data.message);
+                } else {
+                    alert('Upload failed: ' + data.error);
+                }
+            } catch (err) {
+                alert('Upload test failed: ' + err.message);
+            }
+        }
+
+        // Initialize by loading scenarios from backend
+        loadSavedScenarios();
+        renderTree();
+        renderConfig();
+
+        // ── Result Modal helpers ──────────────────────────────────────────
+        function showResultModal(imageUrl, r2Error, linkUrl, textValue) {
+            const modal = document.getElementById('resultModal');
+
+            // Reset all sections
+            const textSec = document.getElementById('resultTextSection');
+            if (textSec) textSec.style.display = 'none';
+            document.getElementById('resultLinkSection').style.display = 'none';
+            document.getElementById('resultImageSection').style.display = 'none';
+            document.getElementById('resultR2Error').style.display = 'none';
+            document.getElementById('resultLocalUrl').style.display = 'none';
+            document.getElementById('resultImagePreview').style.display = 'none';
+
+            if (textValue) {
+                const textSec = document.getElementById('resultTextSection');
+                if (textSec) {
+                    textSec.style.display = 'block';
+                    document.getElementById('resultTextValue').value = textValue;
+                }
+            }
+
+            if (linkUrl && (linkUrl.startsWith('http://') || linkUrl.startsWith('https://'))) {
+                document.getElementById('resultLinkSection').style.display = 'block';
+                document.getElementById('resultLinkUrl').value = linkUrl;
+            }
+
+            const isR2Url = imageUrl && !imageUrl.startsWith('http://localhost') && !imageUrl.startsWith('http://127.0.0.1');
+            const isLocalUrl = imageUrl && (imageUrl.startsWith('http://localhost') || imageUrl.startsWith('http://127.0.0.1'));
+
+            if (isR2Url) {
+                // Successfully uploaded to R2
+                document.getElementById('resultImageSection').style.display = 'block';
+                document.getElementById('resultImageUrl').value = imageUrl;
+                // Reset & show image preview with loading state
+                const preview = document.getElementById('resultImagePreview');
+                const img = document.getElementById('resultImg');
+                const loadingEl = document.getElementById('resultImgLoading');
+                img.style.display = 'none';
+                img.src = '';
+                loadingEl.innerHTML = '⏳ Loading preview...';
+                loadingEl.style.display = 'block';
+                preview.style.display = 'block';
+                // Small delay lets the browser clear the previous src first
+                setTimeout(() => { img.src = imageUrl; }, 50);
+            }
+
+            if (r2Error) {
+                // R2 failed — show error and fall back to local
+                document.getElementById('resultR2Error').style.display = 'block';
+                document.getElementById('resultR2ErrorMsg').innerText = r2Error;
+            }
+
+            if (isLocalUrl || r2Error) {
+                // Show local URL as fallback
+                document.getElementById('resultLocalUrl').style.display = 'block';
+                document.getElementById('resultLocalUrlInput').value = imageUrl || '';
+            }
+
+            modal.style.display = 'flex';
+        }
+
+        function closeResultModal() {
+            document.getElementById('resultModal').style.display = 'none';
+        }
+
+        
+        function copyResultText() {
+            const txt = document.getElementById('resultTextValue').value;
+            navigator.clipboard.writeText(txt).then(() => {
+                const btn = document.getElementById('btnCopyResultText') || event.target;
+                btn.innerText = '✅ Copied!';
+                setTimeout(() => btn.innerText = '📋 Copy to Clipboard', 2000);
+            }).catch(() => {
+                const ta = document.getElementById('resultTextValue');
+                ta.select();
+                document.execCommand('copy');
+                const btn = document.getElementById('btnCopyResultText') || event.target;
+                btn.innerText = '✅ Copied!';
+                setTimeout(() => btn.innerText = '📋 Copy to Clipboard', 2000);
+            });
+        }
+        function copyResultLink() {
+            const url = document.getElementById('resultLinkUrl').value;
+            navigator.clipboard.writeText(url).then(() => {
+                const btn = event.target;
+                btn.innerText = '✅ Copied!';
+                setTimeout(() => btn.innerText = '📋 Copy', 2000);
+            });
+        }
+
+        function openResultLink() {
+            const url = document.getElementById('resultLinkUrl').value;
+            if (url) window.open(url, '_blank');
+        }
+
+        function copyResultUrl() {
+            const url = document.getElementById('resultImageUrl').value;
+            navigator.clipboard.writeText(url).then(() => {
+                const btn = event.target;
+                btn.innerText = '✅ Copied!';
+                setTimeout(() => btn.innerText = '📋 Copy', 2000);
+            });
+        }
+
+        function copyLocalUrl() {
+            const url = document.getElementById('resultLocalUrlInput').value;
+            navigator.clipboard.writeText(url).then(() => {
+                const btn = event.target;
+                btn.innerText = '✅ Copied!';
+                setTimeout(() => btn.innerText = '📋 Copy', 2000);
+            });
+        }
+
+        function openResultUrl() {
+            const url = document.getElementById('resultImageUrl').value;
+            if (url) window.open(url, '_blank');
+        }
+
+        // Close modal when clicking backdrop
+        document.getElementById('resultModal').addEventListener('click', function(e) {
+            if (e.target === this) closeResultModal();
+        });
+
+        // -------------------------------------------------------------
+        // GEMINI CSV BATCH RUNNER STATE & LOGIC
+        // -------------------------------------------------------------
+        let csvRawData = null;      // The raw uploaded CSV string
+        let csvHeaders = [];        // Array of header strings
+        let csvParsedLines = [];    // Raw arrays of parsed strings (including headers)
+        let csvSelectedScenario = null;
+        let csvActiveJobs = {};     // Map of index -> { status: 'success'|'failed', resultUrl?: '...', error?: '...' }
+        let csvIsRunning = false;
+        let csvIsPaused = false;
+        let csvConcurrencyLimit = 5;
+        let csvActiveWorkersCount = 0;
+        let csvNextRowIndex = 0;
+        let csvActiveRetries = new Set();
+
+        function switchView(viewName) {
+            document.querySelectorAll('.global-nav-tab').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.view-container').forEach(c => c.classList.remove('active'));
+
+            if (viewName === 'editor') {
+                document.getElementById('btnNavEditor').classList.add('active');
+                document.getElementById('view-editor').classList.add('active');
+            } else if (viewName === 'csv') {
+                document.getElementById('btnNavCsv').classList.add('active');
+                document.getElementById('view-csv').classList.add('active');
+                loadSavedScenarios();
+            }
+        }
+
+        function evaluateTemplate(template, primaryValue, primaryKey, rowData) {
+            if (!template || !template.trim()) {
+                return primaryValue || '';
+            }
+            let result = template;
+            
+            // 1. Primary placeholder substitution
+            if (primaryKey === 'texte') {
+                result = result.replace(/\{\{(texte|text)\}\}/gi, primaryValue || '');
+            } else if (primaryKey === 'html') {
+                result = result.replace(/\{\{html\}\}/gi, primaryValue || '');
+            }
+
+            // 2. Multi-column substitution from CSV row headers (e.g. {{Category}}, {{Keywords}})
+            if (rowData && typeof rowData === 'object') {
+                for (const [colName, val] of Object.entries(rowData)) {
+                    if (colName) {
+                        const escaped = colName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                        result = result.replace(new RegExp(`\\{\\{${escaped}\\}\\}`, 'gi'), val || '');
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        function scenarioUsesHtml(scenario) {
+            if (!scenario || !Array.isArray(scenario.steps)) return false;
+            return scenario.steps.some(step => {
+                if (!step) return false;
+                if (step.type === 'HTML-Text' || step.type === 'html-text') return true;
+                const containsHtmlTag = (val) => typeof val === 'string' && /\{\{html\d*\}\}/i.test(val);
+                return containsHtmlTag(step.htmlValue) ||
+                       containsHtmlTag(step.textValue) ||
+                       containsHtmlTag(step.url) ||
+                       containsHtmlTag(step.selector);
+            });
+        }
+
+        function updateHtmlMappingVisibility() {
+            const htmlRow = document.getElementById('mapHtmlRow');
+            const htmlSel = document.getElementById('mapHtmlCol');
+            if (!htmlRow || !htmlSel) return;
+
+            const usesHtml = scenarioUsesHtml(csvSelectedScenario);
+            if (usesHtml) {
+                htmlRow.style.display = 'block';
+                // Auto-detect HTML column if CSV headers are available and selection is empty
+                if (csvHeaders && csvHeaders.length > 0 && !htmlSel.value) {
+                    const detectedCol = csvHeaders.find(h => /(html|content|body|article|blog)/i.test(h));
+                    if (detectedCol) htmlSel.value = detectedCol;
+                }
+            } else {
+                htmlRow.style.display = 'none';
+                htmlSel.value = '';
+            }
+            resetBatchState();
+        }
+
+        function onCsvScenarioChange() {
+            const name = document.getElementById('csvScenarioSelect').value;
+            const detailsEl = document.getElementById('csvScenarioDetails');
+            
+            if (!name) {
+                csvSelectedScenario = null;
+                detailsEl.innerText = "No scenario loaded.";
+                updateHtmlMappingVisibility();
+                checkCsvReadyToStart();
+                return;
+            }
+
+            const scenario = savedScenarios.find(s => s.scenarioName === name);
+            if (scenario) {
+                csvSelectedScenario = scenario;
+                if (scenario.concurrency) {
+                    const concSelect = document.getElementById('csvConcurrencyInput');
+                    if (concSelect) concSelect.value = scenario.concurrency;
+                }
+                const hasHtml = scenarioUsesHtml(scenario);
+                detailsEl.innerHTML = `
+                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px; margin-top: 5px;">
+                        <div><strong>Browser:</strong> ${scenario.browserType || 'Isolated'}</div>
+                        <div><strong>Profile:</strong> ${scenario.chromeProfile || 'None'}</div>
+                        <div><strong>Headless:</strong> ${scenario.headless ? 'Yes' : 'No'}</div>
+                        <div><strong>Concurrency:</strong> ${scenario.concurrency || 5} Workers</div>
+                        <div><strong>Steps:</strong> ${scenario.steps ? scenario.steps.length : 0} steps ${hasHtml ? '<span style="color:#0284c7; font-weight:600; margin-left:4px;">(uses HTML)</span>' : ''}</div>
+                    </div>
+                `;
+            } else {
+                detailsEl.innerText = "Scenario configuration not found.";
+                csvSelectedScenario = null;
+            }
+            updateHtmlMappingVisibility();
+            checkCsvReadyToStart();
+        }
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            loadCsvFile(file);
+        }
+
+        // Drag & drop support
+        const dropzone = document.getElementById('csvDropzone');
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.style.borderColor = '#3498db';
+            dropzone.style.background = '#f0f9ff';
+        });
+        dropzone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dropzone.style.borderColor = '#cbd5e1';
+            dropzone.style.background = '#f8fafc';
+        });
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.style.borderColor = '#cbd5e1';
+            dropzone.style.background = '#f8fafc';
+            const file = e.dataTransfer.files[0];
+            if (file && file.name.endsWith('.csv')) {
+                loadCsvFile(file);
+            } else {
+                alert('Please upload a valid .csv file.');
+            }
+        });
+
+        function loadCsvFile(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                processCsvText(text, file.name);
+            };
+            reader.readAsText(file);
+        }
+
+        function parseCSV(text) {
+            const lines = [];
+            let row = [""];
+            lines.push(row);
+            let inQuotes = false;
+
+            for (let i = 0; i < text.length; i++) {
+                const c = text[i];
+                const next = text[i + 1];
+
+                if (c === '"') {
+                    if (inQuotes && next === '"') {
+                        row[row.length - 1] += '"';
+                        i++;
+                    } else {
+                        inQuotes = !inQuotes;
+                    }
+                } else if (c === ',' && !inQuotes) {
+                    row.push("");
+                } else if ((c === '\r' || c === '\n') && !inQuotes) {
+                    if (c === '\r' && next === '\n') {
+                        i++;
+                    }
+                    row = [""];
+                    lines.push(row);
+                } else {
+                    row[row.length - 1] += c;
+                }
+            }
+
+            // Remove trailing empty rows
+            while (lines.length > 0 && (lines[lines.length - 1].length === 0 || (lines[lines.length - 1].length === 1 && lines[lines.length - 1][0] === ""))) {
+                lines.pop();
+            }
+            return lines;
+        }
+
+        function processCsvText(text, filename) {
+            csvRawData = text;
+            csvParsedLines = parseCSV(text);
+
+            if (csvParsedLines.length < 2) {
+                alert('CSV file must contain a header row and at least one data row.');
+                clearCsv();
+                return;
+            }
+
+            csvHeaders = csvParsedLines[0];
+            
+            document.getElementById('csvFileName').innerText = filename;
+            document.getElementById('csvFileInfo').style.display = 'flex';
+            document.getElementById('csvDropzone').style.display = 'none';
+            document.getElementById('csvMappingCard').style.display = 'block';
+
+            // Populate mapping selects
+            const selects = ['mapTextCol', 'mapHtmlCol', 'mapImageCol', 'mapResultCol'];
+            selects.forEach(id => {
+                const sel = document.getElementById(id);
+                if (!sel) return;
+                sel.innerHTML = '';
+                if (id === 'mapResultCol') {
+                    const optNew = document.createElement('option');
+                    optNew.value = '__new__';
+                    optNew.innerText = '+ Create New Column...';
+                    sel.appendChild(optNew);
+                } else if (id === 'mapHtmlCol') {
+                    const optNone = document.createElement('option');
+                    optNone.value = '';
+                    optNone.innerText = '— None / Not Used —';
+                    sel.appendChild(optNone);
+                }
+
+                csvHeaders.forEach(h => {
+                    const opt = document.createElement('option');
+                    opt.value = h;
+                    opt.innerText = h;
+                    sel.appendChild(opt);
+                });
+
+                // Match fields heuristics
+                if (id === 'mapTextCol') {
+                    const promptCol = csvHeaders.find(h => /prompt|text|msg|description|texte|title/i.test(h));
+                    sel.value = promptCol || csvHeaders[0];
+                } else if (id === 'mapHtmlCol') {
+                    const htmlCol = csvHeaders.find(h => /(html|content|body|article|blog)/i.test(h));
+                    sel.value = htmlCol || '';
+                } else if (id === 'mapImageCol') {
+                    const imgCol = csvHeaders.find(h => /image|url|src|pic|img/i.test(h));
+                    sel.value = imgCol || csvHeaders[1] || csvHeaders[0];
+                } else if (id === 'mapResultCol') {
+                    const resCol = csvHeaders.find(h => /result|r2|output|url_r2|link|post_url/i.test(h));
+                    if (resCol) {
+                        sel.value = resCol;
+                    } else {
+                        sel.value = '__new__';
+                    }
+                }
+            });
+
+            onMapResultColChange();
+            updateHtmlMappingVisibility();
+            checkCsvReadyToStart();
+        }
+
+        function onMapResultColChange() {
+            const select = document.getElementById('mapResultCol');
+            const inputNew = document.getElementById('mapResultColNew');
+            if (select.value === '__new__') {
+                inputNew.style.display = 'block';
+            } else {
+                inputNew.style.display = 'none';
+            }
+        }
+
+        function clearCsv() {
+            csvRawData = null;
+            csvHeaders = [];
+            csvParsedLines = [];
+            document.getElementById('csvFileInfo').style.display = 'none';
+            document.getElementById('csvDropzone').style.display = 'block';
+            document.getElementById('csvMappingCard').style.display = 'none';
+            document.getElementById('csvFileInput').value = '';
+            const htmlSel = document.getElementById('mapHtmlCol');
+            if (htmlSel) htmlSel.value = '';
+            const textTpl = document.getElementById('mapTextTemplate');
+            if (textTpl) textTpl.value = '';
+            const htmlTpl = document.getElementById('mapHtmlTemplate');
+            if (htmlTpl) htmlTpl.value = '';
+            
+            resetBatchState();
+            checkCsvReadyToStart();
+        }
+
+        function checkCsvReadyToStart() {
+            const startBtn = document.getElementById('btnCsvStart');
+            if (csvParsedLines.length >= 2 && csvSelectedScenario) {
+                startBtn.disabled = false;
+            } else {
+                startBtn.disabled = true;
+            }
+        }
+
+        function resetBatchState() {
+            csvActiveJobs = {};
+            csvIsRunning = false;
+            csvIsPaused   = false;
+            csvActiveRetries.clear();
+            csvActiveWorkersCount = 0;
+            csvNextRowIndex = 0;
+
+            document.getElementById('btnCsvStart').disabled = csvParsedLines.length < 2 || !csvSelectedScenario;
+            document.getElementById('btnCsvPause').style.display = 'none';
+            document.getElementById('btnCsvPause').innerText = '⏸ Pause';
+            document.getElementById('btnCsvPause').style.background = '#fef3c7';
+            document.getElementById('btnCsvPause').style.color = '#92400e';
+            document.getElementById('btnCsvPause').style.borderColor = '#fcd34d';
+            document.getElementById('btnCsvRetryAll').style.display = 'none';
+            document.getElementById('btnCsvStop').disabled = true;
+            document.getElementById('btnCsvDownload').disabled = true;
+            document.getElementById('csvProgressWrapper').style.display = 'none';
+
+            const totalRows = csvParsedLines.length > 0 ? csvParsedLines.length - 1 : 0;
+            document.getElementById('statTotal').innerText = totalRows;
+            document.getElementById('statRunning').innerText = '0';
+            document.getElementById('statSuccess').innerText = '0';
+            document.getElementById('statFailed').innerText = '0';
+
+            const tbody = document.getElementById('csvLogTableBody');
+            tbody.innerHTML = '';
+
+            const usesHtml = scenarioUsesHtml(csvSelectedScenario);
+            const htmlCol = usesHtml && document.getElementById('mapHtmlCol') ? document.getElementById('mapHtmlCol').value : '';
+            const showHtmlCol = usesHtml && !!htmlCol;
+
+            // Dynamically update the thead
+            const thead = document.getElementById('csvTableHead');
+            if (thead) {
+                if (showHtmlCol) {
+                    thead.innerHTML = `
+                        <tr>
+                            <th style="width: 50px;">Row</th>
+                            <th style="width: 220px;">Input Text</th>
+                            <th style="width: 220px;">Input HTML</th>
+                            <th style="width: 180px;">Input Image</th>
+                            <th style="width: 100px;">Status</th>
+                            <th>Result / Message</th>
+                        </tr>
+                    `;
+                } else {
+                    thead.innerHTML = `
+                        <tr>
+                            <th style="width: 60px;">Row</th>
+                            <th style="width: 250px;">Input Text</th>
+                            <th style="width: 200px;">Input Image</th>
+                            <th style="width: 100px;">Status</th>
+                            <th>Result / Message</th>
+                        </tr>
+                    `;
+                }
+            }
+
+            if (csvParsedLines.length < 2) {
+                const colSpan = showHtmlCol ? 6 : 5;
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="${colSpan}" style="color: #64748b; text-align: center; padding: 40px 0;">
+                            Upload a CSV file and load a scenario to begin batch processing.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            const textCol = document.getElementById('mapTextCol')?.value || '';
+            const imgCol = document.getElementById('mapImageCol')?.value || '';
+            const textTemplate = document.getElementById('mapTextTemplate')?.value || '';
+            const htmlTemplate = document.getElementById('mapHtmlTemplate')?.value || '';
+
+            const textIdx = csvHeaders.indexOf(textCol);
+            const htmlIdx = showHtmlCol ? csvHeaders.indexOf(htmlCol) : -1;
+            const imgIdx = csvHeaders.indexOf(imgCol);
+
+            for (let i = 1; i < csvParsedLines.length; i++) {
+                const line = csvParsedLines[i];
+                const rawTextVal = textIdx !== -1 ? (line[textIdx] || '') : '';
+                const rawHtmlVal = htmlIdx !== -1 ? (line[htmlIdx] || '') : '';
+                const imgVal = imgIdx !== -1 ? (line[imgIdx] || '') : '';
+
+                const rowObj = {};
+                csvHeaders.forEach((h, hIdx) => { if (h) rowObj[h] = line[hIdx] || ''; });
+
+                const textVal = evaluateTemplate(textTemplate, rawTextVal, 'texte', rowObj);
+                const htmlVal = evaluateTemplate(htmlTemplate, rawHtmlVal, 'html', rowObj);
+                const htmlSnippet = htmlVal.length > 60 ? htmlVal.slice(0, 60) + '…' : htmlVal;
+                
+                const tr = document.createElement('tr');
+                tr.id = `csv-row-${i}`;
+                if (showHtmlCol) {
+                    tr.innerHTML = `
+                        <td>${i}</td>
+                        <td title="${escapeHtml(textVal)}">${escapeHtml(textVal)}</td>
+                        <td title="${escapeHtml(htmlVal)}" style="font-family: monospace; font-size: 11px; color: #0284c7;">${escapeHtml(htmlSnippet)}</td>
+                        <td title="${escapeHtml(imgVal)}">${escapeHtml(imgVal)}</td>
+                        <td><span class="csv-status-badge pending" id="row-status-${i}">Pending</span></td>
+                        <td id="row-result-${i}" style="color: #64748b; font-style: italic;">Ready</td>
+                    `;
+                } else {
+                    tr.innerHTML = `
+                        <td>${i}</td>
+                        <td title="${escapeHtml(textVal)}">${escapeHtml(textVal)}</td>
+                        <td title="${escapeHtml(imgVal)}">${escapeHtml(imgVal)}</td>
+                        <td><span class="csv-status-badge pending" id="row-status-${i}">Pending</span></td>
+                        <td id="row-result-${i}" style="color: #64748b; font-style: italic;">Ready</td>
+                    `;
+                }
+                tbody.appendChild(tr);
+            }
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function startBatch() {
+            if (csvIsRunning) return;
+            
+            saveCurrentForm();
+            resetBatchState();
+
+            csvIsRunning = true;
+            csvIsPaused   = false;
+            document.getElementById('btnCsvStart').disabled = true;
+            document.getElementById('btnCsvPause').style.display = 'inline-block';
+            document.getElementById('btnCsvStop').disabled = false;
+            document.getElementById('btnCsvDownload').disabled = true;
+            document.getElementById('csvProgressWrapper').style.display = 'block';
+
+            // Read user-configured parallel worker concurrency from UI (default: 5)
+            const userConcurrency = parseInt(document.getElementById('csvConcurrencyInput')?.value || '5', 10);
+            csvConcurrencyLimit = Math.max(1, userConcurrency);
+            console.log(`[CSV] Concurrency set to ${csvConcurrencyLimit}`);
+
+            // Sync concurrency to backend server queue
+            fetch('/api/concurrency', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ concurrency: csvConcurrencyLimit })
+            }).catch(() => {});
+
+            for (let i = 0; i < csvConcurrencyLimit; i++) {
+                if (i > 0) {
+                    setTimeout(() => startNextWorker(), i * 250);
+                } else {
+                    startNextWorker();
+                }
+            }
+        }
+
+        function pauseBatch() {
+            if (!csvIsRunning) return;
+
+            if (!csvIsPaused) {
+                // ── Pause ──
+                csvIsPaused = true;
+                const btn = document.getElementById('btnCsvPause');
+                btn.innerText = '▶ Resume';
+                btn.style.background   = '#d1fae5';
+                btn.style.color        = '#065f46';
+                btn.style.borderColor  = '#6ee7b7';
+                document.getElementById('csvProgressPercent').innerText += ' (Paused — finishing active rows…)';
+            } else {
+                // ── Resume ──
+                csvIsPaused = false;
+                const btn = document.getElementById('btnCsvPause');
+                btn.innerText = '⏸ Pause';
+                btn.style.background  = '#fef3c7';
+                btn.style.color       = '#92400e';
+                btn.style.borderColor = '#fcd34d';
+
+                // Re-launch workers up to the concurrency limit
+                const toLaunch = Math.max(0, csvConcurrencyLimit - csvActiveWorkersCount);
+                for (let i = 0; i < toLaunch; i++) {
+                    startNextWorker();
+                }
+            }
+        }
+
+
+        function stopBatch() {
+            csvIsRunning = false;
+            csvIsPaused   = false;
+            document.getElementById('btnCsvStop').disabled = true;
+            document.getElementById('btnCsvStart').disabled = false;
+            document.getElementById('btnCsvPause').style.display = 'none';
+            document.getElementById('btnCsvPause').innerText = '⏸ Pause';
+            document.getElementById('btnCsvPause').style.background  = '#fef3c7';
+            document.getElementById('btnCsvPause').style.color       = '#92400e';
+            document.getElementById('btnCsvPause').style.borderColor = '#fcd34d';
+            document.getElementById('btnCsvDownload').disabled = false;
+
+            for (let i = 1; i < csvParsedLines.length; i++) {
+                const badge = document.getElementById(`row-status-${i}`);
+                if (badge && badge.innerText === 'Processing') {
+                    badge.className = 'csv-status-badge failed';
+                    badge.innerText = 'Stopped';
+                    const resultTd = document.getElementById(`row-result-${i}`);
+                    if (resultTd) resultTd.innerText = 'Batch run stopped by user.';
+                }
+            }
+            document.getElementById('statRunning').innerText = '0';
+            updateGlobalProgressUI();
+            // Show Retry All Failed button now that all badges are updated
+            _updateRetryAllBtn();
+        }
+
+        async function startNextWorker() {
+            if (!csvIsRunning) return;
+            // If paused, stop spawning new work but let callers know so active count stays right
+            if (csvIsPaused) return;
+
+            if (csvNextRowIndex >= csvParsedLines.length - 1) {
+                if (csvActiveWorkersCount === 0) {
+                    onBatchCompleted();
+                }
+                return;
+            }
+
+            const rowIndex = csvNextRowIndex + 1;
+            csvNextRowIndex++;
+
+            csvActiveWorkersCount++;
+            updateGlobalProgressUI();
+
+            try {
+                await processRow(rowIndex);
+            } catch (err) {
+                console.error(`Error in row ${rowIndex}:`, err);
+            } finally {
+                csvActiveWorkersCount--;
+                updateGlobalProgressUI();
+                // Only chain the next row if not paused/stopped
+                if (csvIsRunning && !csvIsPaused) {
+                    startNextWorker();
+                } else if (csvIsRunning && csvIsPaused && csvActiveWorkersCount === 0) {
+                    // All workers finished their current row — update pause label
+                    document.getElementById('csvProgressPercent').innerText =
+                        document.getElementById('csvProgressPercent').innerText.replace(/ \(Paused.*\)/, '') +
+                        ' (Paused)';
+                }
+            }
+        }
+
+        async function processRow(rowIndex, isRetry = false) {
+            updateRowStatusUI(rowIndex, 'processing', 'Launching Browser...');
+
+            const textCol = document.getElementById('mapTextCol')?.value || '';
+            const imgCol  = document.getElementById('mapImageCol')?.value || '';
+            const textTemplate = document.getElementById('mapTextTemplate')?.value || '';
+            const htmlTemplate = document.getElementById('mapHtmlTemplate')?.value || '';
+            const usesHtml = scenarioUsesHtml(csvSelectedScenario);
+            const htmlCol = usesHtml && document.getElementById('mapHtmlCol') ? document.getElementById('mapHtmlCol').value : '';
+
+            const textIdx = csvHeaders.indexOf(textCol);
+            const imgIdx  = csvHeaders.indexOf(imgCol);
+            const htmlIdx = htmlCol ? csvHeaders.indexOf(htmlCol) : -1;
+
+            const rawText     = textIdx !== -1 ? (csvParsedLines[rowIndex][textIdx] || '') : '';
+            const imageUrl    = imgIdx  !== -1 ? (csvParsedLines[rowIndex][imgIdx]  || '') : '';
+            const rawHtml     = htmlIdx !== -1 ? (csvParsedLines[rowIndex][htmlIdx] || '') : '';
+
+            try {
+                updateRowStatusUI(rowIndex, 'processing', 'Running automation…');
+
+                // ── 1. Enqueue job (with automatic retry for proxy resilience) ──
+                let queued = null;
+                const rowData = {};
+                csvHeaders.forEach((h, hIdx) => {
+                    if (h) rowData[h] = csvParsedLines[rowIndex][hIdx] || '';
+                });
+
+                const promptText  = evaluateTemplate(textTemplate, rawText, 'texte', rowData);
+                const htmlContent = evaluateTemplate(htmlTemplate, rawHtml, 'html', rowData);
+
+                const payload = {
+                    ...rowData,
+                    texte: promptText,
+                    image: imageUrl,
+                    concurrency: csvConcurrencyLimit
+                };
+                if (usesHtml && htmlContent) {
+                    payload.html = htmlContent;
+                }
+
+                for (let attempt = 1; attempt <= 4; attempt++) {
+                    try {
+                        const res = await fetch(
+                            `/api/execute/${encodeURIComponent(csvSelectedScenario.scenarioName)}`,
+                            {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(payload)
+                            }
+                        );
+
+                        if (!res.ok) {
+                            let errMsg = `HTTP ${res.status}`;
+                            try { const j = await res.json(); errMsg = j.error || j.message || errMsg; } catch (_) {}
+                            throw new Error(errMsg);
+                        }
+
+                        queued = await res.json();
+                        if (!queued.success) throw new Error(queued.error || queued.message || 'Job rejected');
+                        break;
+                    } catch (netErr) {
+                        if (attempt === 4) throw netErr;
+                        await new Promise(r => setTimeout(r, 1000 * attempt));
+                    }
+                }
+                const jobId = queued.jobId;
+
+                // ── 2. Poll until done ──────────────────────────────────
+                updateRowStatusUI(rowIndex, 'processing', `Job ${jobId} — waiting…`);
+                let finalResult = null;
+                while (true) {
+                    await new Promise(r => setTimeout(r, 2000));
+                    // Stop polling only for normal batch workers (not retries)
+                    if (!csvIsRunning && !csvActiveRetries.has(rowIndex)) throw new Error('Batch stopped by user');
+
+                    let job;
+                    try {
+                        const pollRes = await fetch(`/api/job/${jobId}`);
+                        job = await pollRes.json();
+                    } catch (netErr) {
+                        console.warn(`[CSV row ${rowIndex}] Poll error, retrying…`, netErr.message);
+                        continue;
+                    }
+
+                    if (job.status === 'completed') {
+                        finalResult = job.result || {};
+                        break;
+                    }
+                    if (job.status === 'failed') {
+                        throw new Error(job.error || 'Job failed');
+                    }
+                    // 'waiting' | 'active' | undefined → keep polling
+                }
+
+                // ── 3. Store result ─────────────────────────────────────
+                const finalUrl = finalResult.link || finalResult.text || finalResult.clipboard || finalResult.imageUrl || finalResult.url || '';
+                csvActiveJobs[rowIndex] = { status: 'success', resultUrl: finalUrl };
+                updateRowStatusUI(rowIndex, 'success', finalUrl || '(success)');
+
+                // Write result back into the parsed CSV row
+                const resultCol = document.getElementById('mapResultCol').value;
+                let resultColName = resultCol === '__new__'
+                    ? document.getElementById('mapResultColNew').value.trim() || 'ResultURL'
+                    : resultCol;
+                let resultIdx = csvHeaders.indexOf(resultColName);
+                if (resultIdx === -1) {
+                    csvHeaders.push(resultColName);
+                    resultIdx = csvHeaders.length - 1;
+                }
+                if (!csvParsedLines[rowIndex]) csvParsedLines[rowIndex] = [];
+                csvParsedLines[rowIndex][resultIdx] = finalUrl;
+
+            } catch (err) {
+                csvActiveJobs[rowIndex] = { status: 'failed', error: err.message };
+                updateRowStatusUI(rowIndex, 'failed', `Error: ${err.message}`);
+            }
+        }
+
+
+        function updateRowStatusUI(rowIndex, status, messageOrUrl) {
+            const badge = document.getElementById(`row-status-${rowIndex}`);
+            const resultTd = document.getElementById(`row-result-${rowIndex}`);
+
+            if (badge) {
+                badge.className = `csv-status-badge ${status}`;
+                badge.innerText = status.charAt(0).toUpperCase() + status.slice(1);
+
+                const existingRetry = badge.parentNode.querySelector('.csv-retry-btn');
+                if (existingRetry) existingRetry.remove();
+
+                if (status === 'failed') {
+                    const retryBtn = document.createElement('button');
+                    retryBtn.className = 'csv-retry-btn';
+                    retryBtn.innerHTML = '🔄 Retry';
+                    retryBtn.style.marginLeft = '8px';
+                    retryBtn.style.padding = '2px 6px';
+                    retryBtn.style.fontSize = '10px';
+                    retryBtn.style.background = '#3498db';
+                    retryBtn.style.color = '#fff';
+                    retryBtn.style.border = 'none';
+                    retryBtn.style.borderRadius = '3px';
+                    retryBtn.style.cursor = 'pointer';
+                    retryBtn.style.fontWeight = 'bold';
+                    retryBtn.onclick = () => retryRow(rowIndex);
+                    badge.parentNode.appendChild(retryBtn);
+                }
+            }
+
+            if (resultTd) {
+                if (status === 'success') {
+                    resultTd.innerHTML = `<a href="${messageOrUrl}" target="_blank" style="color: #3498db; text-decoration: underline; font-weight: bold;">🔗 Open Result Image</a>`;
+                } else if (status === 'failed') {
+                    resultTd.style.color = '#dc2626';
+                    resultTd.style.fontStyle = 'normal';
+                    resultTd.innerText = messageOrUrl;
+                } else {
+                    resultTd.style.color = '#64748b';
+                    resultTd.style.fontStyle = 'italic';
+                    resultTd.innerText = messageOrUrl;
+                }
+            }
+            updateGlobalProgressUI();
+        }
+
+        async function retryRow(rowIndex) {
+            const badge = document.getElementById(`row-status-${rowIndex}`);
+            if (badge && badge.innerText === 'Processing') return;
+
+            if (!csvSelectedScenario) {
+                alert("Please load a scenario first.");
+                return;
+            }
+
+            csvActiveRetries.add(rowIndex);
+            csvActiveWorkersCount++;
+            updateGlobalProgressUI();
+
+            try {
+                await processRow(rowIndex, true);
+            } catch (err) {
+                console.error(`Error retrying row ${rowIndex}:`, err);
+            } finally {
+                csvActiveRetries.delete(rowIndex);
+                csvActiveWorkersCount--;
+                updateGlobalProgressUI();
+                _updateRetryAllBtn();
+            }
+        }
+
+        // ── Retry All Failed ─────────────────────────────────────────────────
+        function _getFailedRowIndexes() {
+            const failed = [];
+            for (let i = 1; i < csvParsedLines.length; i++) {
+                const badge = document.getElementById(`row-status-${i}`);
+                if (badge && (badge.innerText === 'Failed' || badge.innerText === 'Stopped')) {
+                    failed.push(i);
+                }
+            }
+            return failed;
+        }
+
+        function _updateRetryAllBtn() {
+            const btn = document.getElementById('btnCsvRetryAll');
+            if (!btn) return;
+            const failedCount = _getFailedRowIndexes().length;
+            if (failedCount > 0 && !csvIsRunning) {
+                btn.style.display = 'inline-block';
+                btn.disabled = false;
+                btn.innerHTML = `🔄 Retry All Failed (${failedCount})`;
+            } else {
+                btn.style.display = failedCount > 0 && csvIsRunning ? 'none' : 'none';
+            }
+        }
+
+        async function retryAllFailed() {
+            if (csvIsRunning) return; // batch is still running
+            if (!csvSelectedScenario) {
+                alert('Please load a scenario first.');
+                return;
+            }
+
+            const failedIndexes = _getFailedRowIndexes();
+            if (failedIndexes.length === 0) {
+                alert('No failed rows to retry.');
+                return;
+            }
+
+            // ── Lock UI ──────────────────────────────────────────────────────
+            const btn = document.getElementById('btnCsvRetryAll');
+            btn.disabled = true;
+            btn.innerHTML = `⏳ Retrying 0 / ${failedIndexes.length}…`;
+            document.getElementById('btnCsvStart').disabled  = true;
+            document.getElementById('btnCsvStop').disabled   = true;
+            document.getElementById('btnCsvDownload').disabled = true;
+            document.getElementById('csvProgressWrapper').style.display = 'block';
+
+            const concurrency = Math.max(1, parseInt(
+                document.getElementById('csvConcurrencyInput')?.value || '5', 10
+            ));
+            fetch('/api/concurrency', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ concurrency })
+            }).catch(() => {});
+
+            let done = 0;
+            const total = failedIndexes.length;
+
+            // ── Run in a controlled pool (same concurrency as the main batch) ─
+            let queueIndex = 0;
+
+            async function runWorker() {
+                while (queueIndex < total) {
+                    const rowIndex = failedIndexes[queueIndex++];
+
+                    csvActiveRetries.add(rowIndex);
+                    csvActiveWorkersCount++;
+                    updateGlobalProgressUI();
+
+                    try {
+                        await processRow(rowIndex, true);
+                    } catch (err) {
+                        console.error(`[RetryAll] row ${rowIndex}:`, err);
+                    } finally {
+                        csvActiveRetries.delete(rowIndex);
+                        csvActiveWorkersCount--;
+                        done++;
+                        updateGlobalProgressUI();
+
+                        // Live counter on the button
+                        if (btn) btn.innerHTML = `⏳ Retrying ${done} / ${total}…`;
+
+                        // Update progress bar
+                        const pct = Math.round((done / total) * 100);
+                        const fill = document.getElementById('csvProgressBarFill');
+                        if (fill) fill.style.width = pct + '%';
+                        const pctSpan = document.getElementById('csvProgressPercent');
+                        if (pctSpan) pctSpan.innerText = `Retrying: ${pct}%`;
+                    }
+                }
+            }
+
+            // Spawn up to `concurrency` parallel workers
+            const workers = [];
+            for (let i = 0; i < Math.min(concurrency, total); i++) {
+                workers.push(runWorker());
+            }
+            await Promise.all(workers);
+
+            // ── Unlock UI ─────────────────────────────────────────────────────
+            document.getElementById('btnCsvStart').disabled  = csvParsedLines.length < 2 || !csvSelectedScenario;
+            document.getElementById('btnCsvStop').disabled   = true;
+            document.getElementById('btnCsvDownload').disabled = false;
+            _updateRetryAllBtn(); // re-show if still failed rows remain
+            updateGlobalProgressUI();
+        }
+
+        function updateGlobalProgressUI() {
+            let total = csvParsedLines.length - 1;
+            let success = 0;
+            let failed = 0;
+            let running = 0;
+
+            for (let i = 1; i <= total; i++) {
+                const badge = document.getElementById(`row-status-${i}`);
+                if (badge) {
+                    if (badge.innerText === 'Success') success++;
+                    else if (badge.innerText === 'Failed') failed++;
+                    else if (badge.innerText === 'Processing') running++;
+                }
+            }
+
+            let completed = success + failed;
+            let percent = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+            document.getElementById('statRunning').innerText = running;
+            document.getElementById('statSuccess').innerText = success;
+            document.getElementById('statFailed').innerText = failed;
+
+            document.getElementById('csvProgressPercent').innerText = `Progress: ${percent}%`;
+            document.getElementById('csvProgressCount').innerText = `${completed} / ${total} rows`;
+            document.getElementById('csvProgressBarFill').style.width = `${percent}%`;
+        }
+
+        function onBatchCompleted() {
+            csvIsRunning = false;
+            csvIsPaused   = false;
+            document.getElementById('btnCsvStop').disabled = true;
+            document.getElementById('btnCsvStart').disabled = false;
+            document.getElementById('btnCsvPause').style.display = 'none';
+            document.getElementById('btnCsvPause').innerText = '⏸ Pause';
+            document.getElementById('btnCsvPause').style.background  = '#fef3c7';
+            document.getElementById('btnCsvPause').style.color       = '#92400e';
+            document.getElementById('btnCsvPause').style.borderColor = '#fcd34d';
+            document.getElementById('btnCsvDownload').disabled = false;
+
+            // Show Retry All Failed button automatically if any rows failed
+            _updateRetryAllBtn();
+
+            // Non-blocking completion notice
+            const pctSpan = document.getElementById('csvProgressPercent');
+            if (pctSpan) pctSpan.innerText = '✅ Batch complete!';
+            const failedCount = _getFailedRowIndexes().length;
+            if (failedCount > 0) {
+                const countSpan = document.getElementById('csvProgressCount');
+                if (countSpan) countSpan.innerText = `${failedCount} failed — click 🔄 Retry All Failed to reprocess`;
+            }
+        }
+
+        function downloadCsvResult() {
+            const resultColOption = document.getElementById('mapResultCol').value;
+            let resultColName = resultColOption;
+            let resultColIdx = csvHeaders.indexOf(resultColOption);
+
+            const newLines = JSON.parse(JSON.stringify(csvParsedLines));
+
+            if (resultColOption === '__new__') {
+                resultColName = document.getElementById('mapResultColNew').value || 'r2_image_url';
+                newLines[0].push(resultColName);
+                resultColIdx = newLines[0].length - 1;
+
+                for (let i = 1; i < newLines.length; i++) {
+                    newLines[i].push('');
+                }
+            }
+
+            for (let i = 1; i < newLines.length; i++) {
+                const job = csvActiveJobs[i];
+                if (job && job.status === 'success') {
+                    newLines[i][resultColIdx] = job.resultUrl;
+                } else if (job && job.status === 'failed') {
+                    newLines[i][resultColIdx] = `Error: ${job.error || 'Failed'}`;
+                }
+            }
+
+            const csvContent = newLines.map(row => {
+                return row.map(val => {
+                    const escaped = (val || '').replace(/"/g, '""');
+                    if (escaped.includes(',') || escaped.includes('"') || escaped.includes('\n') || escaped.includes('\r')) {
+                        return `"${escaped}"`;
+                    }
+                    return escaped;
+                }).join(',');
+            }).join('\n');
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            
+            let originalName = document.getElementById('csvFileName').innerText || 'results.csv';
+            if (originalName.endsWith('.csv')) {
+                originalName = originalName.slice(0, -4);
+            }
+            link.setAttribute("download", `${originalName}_processed.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Auto-sync concurrency selection changes to server queue
+        document.getElementById('csvConcurrencyInput')?.addEventListener('change', (e) => {
+            const val = parseInt(e.target.value, 10);
+            if (val > 0) {
+                fetch('/api/concurrency', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ concurrency: val })
+                }).catch(() => {});
+            }
+        });
+        document.getElementById('scenarioConcurrency')?.addEventListener('change', (e) => {
+            const val = parseInt(e.target.value, 10);
+            if (val > 0) {
+                fetch('/api/concurrency', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ concurrency: val })
+                }).catch(() => {});
+            }
+        });
+    </script>
+</body>
+
+</html>
