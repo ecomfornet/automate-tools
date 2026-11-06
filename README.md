@@ -1,3 +1,4 @@
-# automate-tools
+# instabox sandbox
 
-Automate Tools project from instabox.
+This home directory is on an instabox sandbox: a Linux VM in the cloud, not a
+laptop. MACHINE.md says which machine it is and what it has.

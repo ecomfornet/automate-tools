@@ -1,0 +1,11 @@
+**/node_modules
+**/scratch
+**/downloads/*
+!**/downloads/.gitkeep
+**/.tmp*
+*.log
+.git
+.gitignore
+.vscode
+.idea
+*.md
