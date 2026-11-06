@@ -294,7 +294,6 @@ async function handleSharePageIfPresent(page, targetShareUrl = '') {
     }
     console.warn('[SharePage] ⚠️ Canvas app iframe not attached within 30s. Current URL:', page.url());
     return false;
-    return false;
 }
 
 /**
@@ -693,7 +692,98 @@ function cleanupProfileLocks(dir, profileName) {
     } catch (_) {}
 }
 
+function hasActiveDisplay() {
+    if (process.platform !== 'linux') return true;
+    let disp = process.env.DISPLAY;
+    if (!disp) {
+        for (const num of ['99', '1', '0']) {
+            if (fs.existsSync(`/tmp/.X11-unix/X${num}`)) {
+                process.env.DISPLAY = `:${num}`;
+                return true;
+            }
+        }
+        return false;
+    }
+    const m = String(disp).match(/:(\d+)/);
+    if (!m) return Boolean(disp);
+    return fs.existsSync(`/tmp/.X11-unix/X${m[1]}`);
+}
+
+function resolveChromiumExecutablePath() {
+    const envPath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || process.env.CHROME_PATH;
+    if (envPath && fs.existsSync(envPath)) return envPath;
+
+    try {
+        const defaultPath = chromium.executablePath();
+        if (defaultPath && fs.existsSync(defaultPath)) return defaultPath;
+    } catch (_) {}
+
+    const searchRoots = ['/ms-playwright', path.join(os.homedir(), '.cache', 'ms-playwright')];
+    // 1. Prefer full Chromium binaries (supports both headed Xvfb/noVNC and headless)
+    for (const root of searchRoots) {
+        if (!fs.existsSync(root)) continue;
+        try {
+            const dirs = fs.readdirSync(root).sort().reverse();
+            for (const d of dirs) {
+                const fullCandidates = [
+                    path.join(root, d, 'chrome-linux64', 'chrome'),
+                    path.join(root, d, 'chrome-linux', 'chrome')
+                ];
+                for (const c of fullCandidates) {
+                    if (fs.existsSync(c)) return c;
+                }
+            }
+        } catch (_) {}
+    }
+
+    const systemCandidates = [
+        '/usr/bin/google-chrome-stable',
+        '/usr/bin/google-chrome',
+        '/usr/bin/chromium',
+        '/usr/bin/chromium-browser'
+    ];
+    for (const c of systemCandidates) {
+        if (fs.existsSync(c)) return c;
+    }
+
+    // 2. Fallback to headless-shell binaries
+    if (fs.existsSync('/ms-playwright/chrome-headless-shell-linux64/chrome-headless-shell')) {
+        return '/ms-playwright/chrome-headless-shell-linux64/chrome-headless-shell';
+    }
+    for (const root of searchRoots) {
+        if (!fs.existsSync(root)) continue;
+        try {
+            const dirs = fs.readdirSync(root).sort().reverse();
+            for (const d of dirs) {
+                const hs = path.join(root, d, 'chrome-headless-shell-linux64', 'chrome-headless-shell');
+                if (fs.existsSync(hs)) return hs;
+            }
+        } catch (_) {}
+    }
+    return undefined;
+}
+
+function withResolvedBrowserOptions(opts = {}) {
+    const resolved = { ...opts };
+    if (!resolved.executablePath && !resolved.channel) {
+        const execPath = resolveChromiumExecutablePath();
+        if (execPath) {
+            resolved.executablePath = execPath;
+        }
+    }
+    const isHeadlessShell = Boolean(resolved.executablePath && resolved.executablePath.includes('chrome-headless-shell'));
+    const noDisplayOnLinux = process.platform === 'linux' && !hasActiveDisplay();
+    if (isHeadlessShell || noDisplayOnLinux) {
+        resolved.headless = true;
+        if (!resolved.viewport) {
+            resolved.viewport = { width: 1280, height: 720 };
+        }
+    }
+    return resolved;
+}
+
 async function safeLaunchPersistentContext(userDataDir, launchOptions, profileName, forceClose = false) {
+    const resolvedOptions = withResolvedBrowserOptions(launchOptions);
     if (forceClose) {
         try {
             if (process.platform === 'win32') {
@@ -711,7 +801,7 @@ async function safeLaunchPersistentContext(userDataDir, launchOptions, profileNa
     cleanupProfileLocks(userDataDir, profileName);
 
     try {
-        return await chromium.launchPersistentContext(userDataDir, launchOptions);
+        return await chromium.launchPersistentContext(userDataDir, resolvedOptions);
     } catch (err) {
         if (err.message && (err.message.includes('already in use') || err.message.includes('Opening in existing browser session') || err.message.includes('ProcessSingleton'))) {
             console.warn(`[Browser] Profile '${profileName || userDataDir}' is locked by another instance. Auto-recovering...`);
@@ -720,14 +810,15 @@ async function safeLaunchPersistentContext(userDataDir, launchOptions, profileNa
                     execSync('taskkill /F /IM chrome.exe /T', { stdio: 'ignore' });
                 } else {
                     if (profileName) {
-                        execSync(`pkill -9 -f "${profileName}" || true`, { stdio: 'ignore' });
+                        execSync(`pkill -9 -f "${userDataDir}" || pkill -9 -f "${profileName}" || true`, { stdio: 'ignore' });
+                    } else {
+                        execSync('pkill -9 -f chrome || pkill -9 -f chromium || true', { stdio: 'ignore' });
                     }
-                    execSync('pkill -9 -f chrome || pkill -9 -f chromium || true', { stdio: 'ignore' });
                 }
                 await new Promise(r => setTimeout(r, 1000));
             } catch (_) {}
             cleanupProfileLocks(userDataDir, profileName);
-            return await chromium.launchPersistentContext(userDataDir, launchOptions);
+            return await chromium.launchPersistentContext(userDataDir, resolvedOptions);
         }
         throw err;
     }
@@ -750,8 +841,10 @@ async function runAutomation(cfg, steps, hostUrl = 'http://localhost:3000') {
         const ctxOpts = cfg.userAgent ? { userAgent: cfg.userAgent } : {};
 
         const isLinux = process.platform === 'linux';
-        const hasDisplay = Boolean(process.env.DISPLAY);
-        const shouldBeHeadless = cfg.headless === true || (isLinux && !hasDisplay);
+        const hasDisplay = hasActiveDisplay();
+        const resolvedExecPath = resolveChromiumExecutablePath();
+        const isHeadlessShellOnly = Boolean(resolvedExecPath && resolvedExecPath.includes('chrome-headless-shell'));
+        const shouldBeHeadless = cfg.headless === true || (isLinux && !hasDisplay) || isHeadlessShellOnly;
         const linuxFlags = isLinux ? [
             '--no-sandbox', '--disable-setuid-sandbox',
             '--disable-dev-shm-usage', '--disable-gpu',
@@ -819,10 +912,10 @@ async function runAutomation(cfg, steps, hostUrl = 'http://localhost:3000') {
             }
         } else {
             const headlessArgsBare = shouldBeHeadless ? ['--window-size=1280,720'] : [];
-            const browser = await chromium.launch({
+            const browser = await chromium.launch(withResolvedBrowserOptions({
                 headless: shouldBeHeadless,
                 args: ['--disable-blink-features=AutomationControlled', '--password-store=basic', ...linuxFlags, ...headlessArgsBare]
-            });
+            }));
             browserContext = await browser.newContext({
                 ignoreHTTPSErrors: true,
                 viewport: shouldBeHeadless ? { width: 1280, height: 720 } : null,
@@ -885,7 +978,7 @@ async function runAutomation(cfg, steps, hostUrl = 'http://localhost:3000') {
         });
 
         // In headless mode set explicit viewport so Gemini renders full layout
-        if (cfg.headless) await page.setViewportSize({ width: 1280, height: 720 }).catch(() => {});
+        if (shouldBeHeadless) await page.setViewportSize({ width: 1280, height: 720 }).catch(() => {});
         await page.bringToFront();
 
         for (let i = 0; i < steps.length; i++) {
@@ -905,7 +998,7 @@ async function runAutomation(cfg, steps, hostUrl = 'http://localhost:3000') {
                 await handleCaptchaIfPresent(page);
                 if (navUrl.includes('/share/')) {
                     await handleSharePageIfPresent(page, navUrl);
-                } else if (cfg.headless) {
+                } else if (shouldBeHeadless) {
                     await page.waitForTimeout(2500);
                     await dismissCommonOverlays(page, 2000);
                 } else {
@@ -2440,7 +2533,9 @@ app.all('/api/execute/:scenarioName', async (req, res) => {
         jobQueue.setConcurrency(requestedConcurrency);
     }
 
-    const hostUrl = `${req.protocol}://${req.get('host')}`;
+    const proto = (req.headers['x-forwarded-proto'] || req.protocol || 'http').split(',')[0].trim();
+    const hostHeader = (req.headers['x-forwarded-host'] || req.get('host') || 'localhost:3000').split(',')[0].trim();
+    const hostUrl = `${proto}://${hostHeader}`;
     const jobId = jobQueue.add('execute', { scenario, steps, hostUrl }, async (data, updateProgress) => {
         updateProgress(10);
         const result = await runAutomation(data.scenario, data.steps, data.hostUrl);
@@ -2485,7 +2580,9 @@ app.post('/api/run-task', async (req, res) => {
         jobQueue.setConcurrency(requestedConcurrency);
     }
 
-    const hostUrl = `${req.protocol}://${req.get('host')}`;
+    const proto = (req.headers['x-forwarded-proto'] || req.protocol || 'http').split(',')[0].trim();
+    const hostHeader = (req.headers['x-forwarded-host'] || req.get('host') || 'localhost:3000').split(',')[0].trim();
+    const hostUrl = `${proto}://${hostHeader}`;
     const jobId = jobQueue.add('run-task', { data, steps, hostUrl }, async (payload, updateProgress) => {
         updateProgress(10);
         const result = await runAutomation(payload.data, payload.steps, payload.hostUrl);
@@ -2734,13 +2831,26 @@ app.post('/api/r2/create-bucket', async (req, res) => {
 app.post('/api/r2/delete-bucket', async (req, res) => {
     const { endpoint, cfApiToken, bucketName, accessKey, secretKey } = req.body;
     const accountId = extractAccountId(endpoint);
+    let cfError = null;
     if (cfApiToken && accountId) {
-        try { const r = await (await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/r2/buckets/${bucketName}`, { method: 'DELETE', headers: cfHeaders(cfApiToken) })).json(); if (r.success) return res.json({ success: true }); } catch (_) {}
+        try {
+            const r = await (await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/r2/buckets/${bucketName}`, { method: 'DELETE', headers: cfHeaders(cfApiToken) })).json();
+            if (r.success) return res.json({ success: true, message: `Bucket "${bucketName}" deleted successfully!` });
+            cfError = r.errors?.[0]?.message || 'Failed to delete bucket via Cloudflare API.';
+        } catch (e) {
+            cfError = e.message;
+        }
     }
     if (accessKey && secretKey && endpoint) {
-        try { const s3 = new S3Client({ region: 'auto', endpoint, credentials: { accessKeyId: accessKey, secretAccessKey: secretKey } }); await s3.send(new DeleteBucketCommand({ Bucket: bucketName })); return res.json({ success: true }); } catch (e) { return res.json({ success: false, error: e.message }); }
+        try {
+            const s3 = new S3Client({ region: 'auto', endpoint, credentials: { accessKeyId: accessKey, secretAccessKey: secretKey } });
+            await s3.send(new DeleteBucketCommand({ Bucket: bucketName }));
+            return res.json({ success: true, message: `Bucket "${bucketName}" deleted successfully!` });
+        } catch (e) {
+            return res.json({ success: false, error: e.message });
+        }
     }
-    res.json({ success: false, error: 'Missing credentials.' });
+    res.json({ success: false, error: cfError || 'Missing credentials.' });
 });
 
 app.post('/api/r2/test', async (req, res) => {
@@ -2801,7 +2911,7 @@ app.post('/api/concurrency', (req, res) => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
     cleanTempProfiles();
     cleanOldDownloads();
     setInterval(cleanTempProfiles, 15 * 60 * 1000).unref();

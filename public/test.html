@@ -1,6 +1,90 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <script>
+        (function() {
+            var origDefineProperty = Object.defineProperty;
+            function ensureWritableFetch() {
+                try {
+                    var ownDesc = Object.getOwnPropertyDescriptor(window, 'fetch');
+                    if (ownDesc && ownDesc.configurable === false) return;
+                    var current = window.fetch;
+                    if (typeof current === 'function') {
+                        current = current.bind(window);
+                    }
+                    origDefineProperty.call(Object, window, 'fetch', {
+                        configurable: true,
+                        enumerable: true,
+                        get: function() { return current; },
+                        set: function(fn) {
+                            if (typeof fn === 'function') current = fn;
+                        }
+                    });
+                } catch (_) {}
+            }
+            try {
+                Object.defineProperty = function(target, prop, descriptor) {
+                    if ((target === window || (typeof Window !== 'undefined' && target === Window.prototype)) &&
+                        prop === 'fetch' && descriptor && typeof descriptor === 'object') {
+                        if (descriptor.get && !descriptor.set) {
+                            var getter = descriptor.get;
+                            var customCurrent = null;
+                            descriptor = Object.assign({}, descriptor, {
+                                configurable: true,
+                                get: function() {
+                                    return customCurrent || getter.call(this);
+                                },
+                                set: function(fn) {
+                                    if (typeof fn === 'function') customCurrent = fn;
+                                }
+                            });
+                        } else if ('value' in descriptor && descriptor.writable === false) {
+                            descriptor = Object.assign({}, descriptor, {
+                                configurable: true,
+                                writable: true
+                            });
+                        }
+                    }
+                    return origDefineProperty.call(Object, target, prop, descriptor);
+                };
+            } catch (_) {}
+            ensureWritableFetch();
+
+            function isIgnoredExtensionError(msg, src, stack) {
+                var m = String(msg || '');
+                var s = String(src || '');
+                var st = String(stack || '');
+                if (s.indexOf('chrome-extension://') !== -1 || st.indexOf('chrome-extension://') !== -1) return true;
+                if (s.indexOf('moz-extension://') !== -1 || st.indexOf('moz-extension://') !== -1) return true;
+                if (m.indexOf('Cannot set property fetch') !== -1) return true;
+                return false;
+            }
+            window.addEventListener('error', function(e) {
+                if (isIgnoredExtensionError(e.message, e.filename, e.error && e.error.stack)) {
+                    e.stopImmediatePropagation();
+                    e.preventDefault();
+                    return true;
+                }
+            }, true);
+            window.addEventListener('unhandledrejection', function(e) {
+                var r = e.reason;
+                var msg = r && (r.message || String(r));
+                var stack = r && r.stack;
+                if (isIgnoredExtensionError(msg, '', stack)) {
+                    e.stopImmediatePropagation();
+                    e.preventDefault();
+                    return true;
+                }
+            }, true);
+            var prevOnError = window.onerror;
+            window.onerror = function(msg, src, line, col, err) {
+                if (isIgnoredExtensionError(msg, src, err && err.stack)) {
+                    return true;
+                }
+                return typeof prevOnError === 'function' ? prevOnError.apply(this, arguments) : false;
+            };
+        })();
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Test API Execution</title>

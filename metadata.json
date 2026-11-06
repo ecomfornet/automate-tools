@@ -1,0 +1,4 @@
+{
+  "name": "Playwright Automation Tool",
+  "description": "High-concurrency web automation dashboard using Playwright, Express, and in-memory queue"
+}

@@ -714,7 +714,96 @@ function cleanupProfileLocks(dir, profileName) {
     } catch (_) {}
 }
 
+function hasActiveDisplay() {
+    if (process.platform !== 'linux') return true;
+    let disp = process.env.DISPLAY;
+    if (!disp) {
+        for (const num of ['99', '1', '0']) {
+            if (fs.existsSync(`/tmp/.X11-unix/X${num}`)) {
+                process.env.DISPLAY = `:${num}`;
+                return true;
+            }
+        }
+        return false;
+    }
+    const m = String(disp).match(/:(\d+)/);
+    if (!m) return Boolean(disp);
+    return fs.existsSync(`/tmp/.X11-unix/X${m[1]}`);
+}
+
+function resolveChromiumExecutablePath() {
+    const envPath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || process.env.CHROME_PATH;
+    if (envPath && fs.existsSync(envPath)) return envPath;
+
+    try {
+        const defaultPath = chromium.executablePath();
+        if (defaultPath && fs.existsSync(defaultPath)) return defaultPath;
+    } catch (_) {}
+
+    const searchRoots = ['/ms-playwright', path.join(os.homedir(), '.cache', 'ms-playwright')];
+    for (const root of searchRoots) {
+        if (!fs.existsSync(root)) continue;
+        try {
+            const dirs = fs.readdirSync(root).sort().reverse();
+            for (const d of dirs) {
+                const fullCandidates = [
+                    path.join(root, d, 'chrome-linux64', 'chrome'),
+                    path.join(root, d, 'chrome-linux', 'chrome')
+                ];
+                for (const c of fullCandidates) {
+                    if (fs.existsSync(c)) return c;
+                }
+            }
+        } catch (_) {}
+    }
+
+    const systemCandidates = [
+        '/usr/bin/google-chrome-stable',
+        '/usr/bin/google-chrome',
+        '/usr/bin/chromium',
+        '/usr/bin/chromium-browser'
+    ];
+    for (const c of systemCandidates) {
+        if (fs.existsSync(c)) return c;
+    }
+
+    if (fs.existsSync('/ms-playwright/chrome-headless-shell-linux64/chrome-headless-shell')) {
+        return '/ms-playwright/chrome-headless-shell-linux64/chrome-headless-shell';
+    }
+    for (const root of searchRoots) {
+        if (!fs.existsSync(root)) continue;
+        try {
+            const dirs = fs.readdirSync(root).sort().reverse();
+            for (const d of dirs) {
+                const hs = path.join(root, d, 'chrome-headless-shell-linux64', 'chrome-headless-shell');
+                if (fs.existsSync(hs)) return hs;
+            }
+        } catch (_) {}
+    }
+    return undefined;
+}
+
+function withResolvedBrowserOptions(opts = {}) {
+    const resolved = { ...opts };
+    if (!resolved.executablePath && !resolved.channel) {
+        const execPath = resolveChromiumExecutablePath();
+        if (execPath) {
+            resolved.executablePath = execPath;
+        }
+    }
+    const isHeadlessShell = Boolean(resolved.executablePath && resolved.executablePath.includes('chrome-headless-shell'));
+    const noDisplayOnLinux = process.platform === 'linux' && !hasActiveDisplay();
+    if (isHeadlessShell || noDisplayOnLinux) {
+        resolved.headless = true;
+        if (!resolved.viewport) {
+            resolved.viewport = { width: 1280, height: 720 };
+        }
+    }
+    return resolved;
+}
+
 async function safeLaunchPersistentContext(userDataDir, launchOptions, profileName, forceClose = false) {
+    const resolvedOptions = withResolvedBrowserOptions(launchOptions);
     if (forceClose) {
         try {
             if (process.platform === 'win32') {
@@ -732,7 +821,7 @@ async function safeLaunchPersistentContext(userDataDir, launchOptions, profileNa
     cleanupProfileLocks(userDataDir, profileName);
 
     try {
-        return await chromium.launchPersistentContext(userDataDir, launchOptions);
+        return await chromium.launchPersistentContext(userDataDir, resolvedOptions);
     } catch (err) {
         if (err.message && (err.message.includes('already in use') || err.message.includes('Opening in existing browser session') || err.message.includes('ProcessSingleton'))) {
             console.warn(`[Worker] Profile '${profileName || userDataDir}' is locked by another instance. Auto-recovering...`);
@@ -741,14 +830,15 @@ async function safeLaunchPersistentContext(userDataDir, launchOptions, profileNa
                     execSync('taskkill /F /IM chrome.exe /T', { stdio: 'ignore' });
                 } else {
                     if (profileName) {
-                        execSync(`pkill -9 -f "${profileName}" || true`, { stdio: 'ignore' });
+                        execSync(`pkill -9 -f "${userDataDir}" || pkill -9 -f "${profileName}" || true`, { stdio: 'ignore' });
+                    } else {
+                        execSync('pkill -9 -f chrome || pkill -9 -f chromium || true', { stdio: 'ignore' });
                     }
-                    execSync('pkill -9 -f chrome || pkill -9 -f chromium || true', { stdio: 'ignore' });
                 }
                 await new Promise(r => setTimeout(r, 1000));
             } catch (_) {}
             cleanupProfileLocks(userDataDir, profileName);
-            return await chromium.launchPersistentContext(userDataDir, launchOptions);
+            return await chromium.launchPersistentContext(userDataDir, resolvedOptions);
         }
         throw err;
     }
@@ -774,8 +864,10 @@ async function runAutomation(scenarioConfig, steps, hostUrl = 'http://localhost:
         const contextOptions = userAgent ? { userAgent } : {};
 
         const isLinux = process.platform === 'linux';
-        const hasDisplay = Boolean(process.env.DISPLAY);
-        const shouldBeHeadless = headless === true || (isLinux && !hasDisplay);
+        const hasDisplay = hasActiveDisplay();
+        const resolvedExecPath = resolveChromiumExecutablePath();
+        const isHeadlessShellOnly = Boolean(resolvedExecPath && resolvedExecPath.includes('chrome-headless-shell'));
+        const shouldBeHeadless = headless === true || (isLinux && !hasDisplay) || isHeadlessShellOnly;
         const linuxFlags = isLinux ? [
             '--no-sandbox', '--disable-setuid-sandbox',
             '--disable-dev-shm-usage', '--disable-gpu',
@@ -829,10 +921,10 @@ async function runAutomation(scenarioConfig, steps, hostUrl = 'http://localhost:
                 try { await browserContext.grantPermissions(['clipboard-read', 'clipboard-write']).catch(() => {}); } catch (_) {}
             }
         } else {
-            const browser = await chromium.launch({
-                headless: headless === true,
+            const browser = await chromium.launch(withResolvedBrowserOptions({
+                headless: shouldBeHeadless,
                 args: ['--disable-blink-features=AutomationControlled', '--password-store=basic', ...linuxFlags]
-            });
+            }));
             browserContext = await browser.newContext({ ignoreHTTPSErrors: true, ...contextOptions });
             browserContext._browser = browser;
         }

@@ -21,14 +21,14 @@ COPY package*.json ./
 # Install production dependencies
 RUN npm install --omit=dev
 
-# Verify and ensure Playwright Chromium browser is installed
-RUN npx playwright install chromium
+# Verify and ensure Playwright Chromium browser & headless shell are installed
+RUN npx playwright install chromium chromium-headless-shell || npx playwright install chromium
 
 # Copy all application code
 COPY . .
 
-# Ensure entrypoint is executable
-RUN chmod +x /app/entrypoint.sh
+# Normalize line endings and ensure entrypoint is executable
+RUN sed -i 's/\r$//' /app/entrypoint.sh && chmod +x /app/entrypoint.sh
 
 # Ensure storage and profile directories exist
 RUN mkdir -p /app/downloads /app/local_profiles /app/scratch
