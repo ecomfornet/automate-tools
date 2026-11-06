@@ -23,6 +23,8 @@ RUN npm install --omit=dev
 
 # Verify and ensure Playwright Chromium browser & headless shell are installed
 RUN npx playwright install chromium chromium-headless-shell || npx playwright install chromium
+RUN npx playwright install-deps firefox || true
+RUN npx camoufox fetch || true
 
 # Copy all application code
 COPY . .
